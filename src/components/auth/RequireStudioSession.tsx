@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { Navigate, useLocation } from 'react-router-dom'
+import { Link, Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../lib/auth/AuthContext'
 import { useStudio } from '../../lib/studio/StudioContext'
 import { isSupabaseConfigured } from '../../lib/supabaseClient'
@@ -29,8 +29,12 @@ export function RequireStudioSession({ children }: { children: ReactNode }) {
         <div className="max-w-sm rounded-xl border border-slate-200 bg-white p-6 text-center shadow-sm">
           <p className="text-sm font-semibold text-slate-900">Nessuno studio associato</p>
           <p className="mt-2 text-sm text-slate-500">
-            Il tuo account non risulta collegato a nessuno studio. Contatta chi gestisce la piattaforma ASISD.
+            Il tuo account non risulta collegato a nessuno studio. Se fai parte del team ASISD, prova l'area
+            amministrazione; altrimenti contatta chi gestisce la piattaforma.
           </p>
+          <Link to="/admin" className="mt-4 inline-block text-sm text-blue-600 hover:underline">
+            Vai all'amministrazione
+          </Link>
         </div>
       </div>
     )

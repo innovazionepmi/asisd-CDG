@@ -223,6 +223,12 @@ export function EconomicsPage() {
         title={`Valore AFP ${year - 1}`}
         subtitle="Da usare quando il dettaglio trimestrale reale dell'anno precedente non è (ancora) nel sistema — sostituisce la colonna 'Totale AFP' dell'Excel"
       >
+        {priorPl.length > 0 && (
+          <p className="mb-4 rounded-lg bg-emerald-50 px-3 py-2 text-xs text-emerald-700">
+            Per il {year - 1} sono già presenti dati trimestrali reali: il confronto "vs anno precedente" li usa già,
+            questo valore resta come riserva solo per gli anni senza dettaglio reale.
+          </p>
+        )}
         <div className="flex flex-wrap items-end gap-4">
           <NumberField label="Ricavi annui" value={baselineDraft.revenue} onChange={(v) => setBaselineDraft((d) => ({ ...d, revenue: v }))} prefix="€" />
           <NumberField label="MOL annuo" value={baselineDraft.mol} onChange={(v) => setBaselineDraft((d) => ({ ...d, mol: v }))} prefix="€" />

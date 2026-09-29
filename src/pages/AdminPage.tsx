@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { PageHeader } from '../components/layout/PageHeader'
 import { NumberField } from '../components/ui/NumberField'
 import { SectionCard } from '../components/ui/SectionCard'
@@ -80,9 +81,14 @@ export function AdminPage() {
             Il tuo account non è abilitato alla dashboard amministrativa. Contatta chi gestisce la piattaforma per essere
             aggiunto a <code className="rounded bg-slate-100 px-1">platform_admins</code>.
           </p>
-          <button onClick={signOut} className="mt-4 text-sm text-blue-600 hover:underline">
-            Esci
-          </button>
+          <div className="mt-4 flex items-center justify-center gap-4">
+            <Link to="/" className="text-sm text-blue-600 hover:underline">
+              Vai all'app
+            </Link>
+            <button onClick={signOut} className="text-sm text-blue-600 hover:underline">
+              Esci
+            </button>
+          </div>
         </div>
       </div>
     )
@@ -94,9 +100,14 @@ export function AdminPage() {
         title="Amministrazione ASISD"
         subtitle="Istanzia nuovi studi clienti e crea le credenziali per il titolare"
         actions={
-          <button onClick={signOut} className="text-sm text-slate-500 hover:text-slate-800">
-            Esci
-          </button>
+          <div className="flex items-center gap-4">
+            <Link to="/" className="text-sm text-slate-500 hover:text-slate-800">
+              ← Torna all'app
+            </Link>
+            <button onClick={signOut} className="text-sm text-slate-500 hover:text-slate-800">
+              Esci
+            </button>
+          </div>
         }
       />
 
