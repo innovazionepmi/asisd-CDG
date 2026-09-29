@@ -1,6 +1,6 @@
 # Stato del progetto — ASISD Controllo di Gestione
 
-Ultimo aggiornamento: 2026-09-15
+Ultimo aggiornamento: 2026-09-29
 
 ## Contesto
 
@@ -95,61 +95,94 @@ tutte le tabelle — vedi Prossimi passi).
   ancora testato con credenziali reali** — serve un progetto Supabase con
   le migration applicate (vedi sotto).
 
+## Login del titolare + risoluzione studio (aggiunto 2026-09-29)
+
+Le pagine "normali" (Dashboard/Traffico/Preventivi/Produzione/Economics/
+Cashflow) ora richiedono login quando l'app è collegata a Supabase reale, e
+mostrano solo i dati dello studio dell'utente loggato — non più un
+`VITE_DEFAULT_STUDIO_ID` fisso uguale per chiunque apra l'URL.
+
+- `src/lib/studio/StudioContext.tsx` — dopo il login, legge la prima riga
+  di `studio_members` per l'utente corrente (`user_id = auth.uid()`, RLS
+  già lo permette da `0003_rls.sql`) ed espone `studioId`/`studioName`/
+  `role`. Comunica lo `studioId` a `supabaseProvider.ts` via
+  `setCurrentStudioId()` (variabile di modulo, non più env var).
+- `src/components/auth/RequireStudioSession.tsx` — guardia sulle pagine
+  normali: **in modalità demo (Supabase non configurato) non chiede nulla**
+  (comportamento invariato); con Supabase reale richiede login e uno
+  studio associato, altrimenti mostra un messaggio invece di interrogare
+  il DB senza `studio_id`.
+- `LoginPage` ora torna alla pagina di provenienza dopo il login (non più
+  sempre a `/admin`) — serve sia i titolari sia il team ASISD.
+- `Sidebar` mostra il nome dello studio loggato e un pulsante "Esci".
+- `VITE_DEFAULT_STUDIO_ID` non è più letta dal codice (rimossa da
+  `supabaseProvider.ts` e da `.env.example`); se è ancora impostata su
+  Vercel è innocua, si può togliere quando si vuole.
+- Verificato: la modalità demo (nessun Supabase configurato) resta
+  identica a prima — nessuna richiesta di login, dati fixture immediati
+  (testato disattivando temporaneamente `.env.local`). **Non ancora
+  verificato con un vero titolare loggato** contro Supabase reale (serve
+  aggiungere un utente a `studio_members` — vedi sotto).
+- Aggiunto anche: la Dashboard ora mostra l'errore reale invece di restare
+  bloccata su "Caricamento…" a vita se una chiamata fallisce (bug trovato
+  il 15/09 durante il debug del progetto Supabase in pausa — mancava un
+  try/catch). Le altre 5 pagine non avevano lo stesso rischio di blocco
+  infinito (nessun guard "solo se i dati esistono"), quindi non sono state
+  toccate.
+
+**Per testare**: il superadmin creato il 15/09 non è automaticamente
+titolare di nessuno studio (sono due ruoli separati per design). Per
+vederlo funzionare da titolare, nell'SQL Editor di Supabase:
+```sql
+insert into studio_members (studio_id, user_id, role)
+values (
+  (select id from studios order by created_at desc limit 1),
+  '<uuid del tuo utente>',
+  'owner'
+);
+```
+Poi ricarica l'app da normale (non `/admin`): dovrebbe chiedere login e,
+una volta autenticato, mostrare il nome dello Studio Test in sidebar.
+
 ## Stato attuale / limiti noti
 
-- **Non è ancora un repository git** — nessun commit fatto finora.
-- **Migrations importate da Emilio in Supabase (15/09)**, ma **prima** che
-  venisse scritta `0005_platform_admin.sql` in questa sessione: va applicata
-  anche quella, altrimenti la dashboard admin non funziona (tabella
-  `platform_admins` mancante).
-- **App non ancora collegata al progetto Supabase reale**: gira sul
-  provider demo (localStorage). Serve creare `.env.local` (mai committato,
-  già in `.gitignore`) con `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY`
-  per il frontend.
-- **Le funzioni `api/admin/*` non girano con `vite dev`** (sono Vercel
-  Functions): per testarle serve `vercel dev` con `SUPABASE_URL` e
-  `SUPABASE_SERVICE_ROLE_KEY` impostate, oppure deployare su Vercel e
-  impostarle in Project Settings (mai in un file nel repo).
-- **Bootstrap del primo admin**: nessuno può auto-promuoversi
-  `platform_admin` dalla UI (per design). Va fatto a mano una volta sola:
-  1. Creare un utente Supabase Auth per Emilio/Andrea (Dashboard Supabase →
-     Authentication → Users → Add user, oppure self-signup se abilitato).
-  2. Copiare il suo UUID.
-  3. `insert into platform_admins (user_id) values ('<uuid>');` nell'SQL
-     Editor di Supabase (il trigger di `0005` ha già popolato `app_users`
-     per quell'utente).
-- Nessuno studio-switcher per i titolari (fuori scope di oggi: oggi si
-  parla solo di provisioning admin, non di login del titolare nella propria
-  app — quello resta un passo successivo).
-- ~~RLS dimostrata solo su `monthly_visits`~~ **completata 2026-09-15**
-  (`0006_public_read_shared_dimensions.sql`): tutte le tabelle fact hanno
-  ora le policy select/insert/update; le dimensioni condivise
-  (canali/categorie/conti/metric_catalog) sono leggibili anche senza
-  login quando `studio_id is null` (default ASISD).
-- **Le pagine "normali" (Traffico/Preventivi/...) restano bloccate contro
-  Supabase reale finché non esiste il login del titolare**: usano la anon
-  key senza sessione, quindi `auth.uid()` è sempre null e le policy RLS
-  (corrette!) negano lettura/scrittura per dato di studio. Non è un bug,
-  è la conseguenza attesa di RLS fatta bene senza ancora il pezzo di login
-  — vedi "Prossimo passo".
+- **Repo git creato e collegato**: `github.com/innovazionepmi/asisd-CDG`,
+  branch `main` (produzione) e `staging` (preview), entrambi deployati su
+  Vercel. Env vars impostate su Vercel (`VITE_SUPABASE_URL`,
+  `VITE_SUPABASE_ANON_KEY`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`).
+- Migrations applicate su Supabase: `0001` → `0006` (inclusa
+  `0005_platform_admin.sql` e `0006_public_read_shared_dimensions.sql`,
+  che completa tutte le policy RLS rimaste scoperte).
+- Superadmin bootstrappato in `platform_admins`, dashboard `/admin`
+  testata: crea studio + invito email (verificare che l'invito sia
+  arrivato davvero, non ancora confermato in questa sessione).
+- Studio di prova ("Studio Test") popolato con dati demo realistici
+  (2025, stessi numeri dell'Excel originale) via script SQL diretti — vedi
+  cronologia sessione per gli insert usati, non salvati come migration
+  perché sono dati di prova, non schema. Una policy RLS temporanea
+  (`TEMP_DEMO_anon_read_*`, da rimuovere) permette la lettura anonima solo
+  di questo studio, usata per verificare i grafici prima che esistesse il
+  login vero.
+- Nessuno studio-switcher per chi appartiene a più studi (es. un
+  `asisd_coach`): si prende sempre il primo `studio_members` trovato.
+  Accettabile per v1, da rivedere se serve davvero a qualcuno.
 - Assunzione aperta da validare con Andrea: se i preventivi "generali" (non
   solo prima visita) vadano rilevati mese per mese o a trimestre come il
   conto economico (vedi `docs/data-model.md`, sezione assunzioni).
 
 ## Prossimo passo
 
-Per **testare il flusso admin end-to-end**, la palla passa a Emilio:
-1. Applicare `0005_platform_admin.sql` sul progetto Supabase.
-2. Bootstrap del primo admin (vedi sopra).
-3. Creare `.env.local` con `VITE_SUPABASE_URL`/`VITE_SUPABASE_ANON_KEY`.
-4. Deployare su Vercel (o `vercel dev` in locale) con
-   `SUPABASE_URL`/`SUPABASE_SERVICE_ROLE_KEY` impostate nelle env vars del
-   progetto, per far funzionare `api/admin/studios.ts`.
-
-Una volta fatto questo, prossimo lavoro sul codice: login del titolare
-studio nella app "normale" (non solo l'area `/admin`) — oggi un titolare
-invitato riceve credenziali ma non ha ancora un modo per accedere ai dati
-del proprio studio nelle pagine Traffico/Preventivi/ecc., che restano
-legate al provider demo o a `VITE_DEFAULT_STUDIO_ID` fisso. Serve: sessione
-utente collegata allo `studio_id` giusto via `studio_members`, e rimuovere
-la dipendenza da `VITE_DEFAULT_STUDIO_ID` in `supabaseProvider.ts`.
+1. **Verificare il login titolare end-to-end** con Supabase reale (vedi
+   riquadro sopra) — non ancora testato in questa sessione, solo la
+   modalità demo è stata confermata invariata.
+2. Rimuovere le policy `TEMP_DEMO_anon_read_*` (script di pulizia già
+   preparato in sessione) una volta finiti i test manuali, prima di
+   invitare uno studio vero.
+3. Decidere se/come estendere il flusso di creazione studio in `/admin`
+   per popolare anche `studio_configs` (oggi lo fa solo per lo Studio Test
+   creato a mano via SQL, non ancora per gli studi creati dalla UI admin —
+   controllare `api/admin/studios.ts`, che in realtà lo fa già: verificare
+   con un vero secondo studio creato dalla UI).
+4. Valutare code-splitting: il bundle JS è cresciuto a ~930KB minificato
+   (avviso di build, non bloccante) — non urgente per un tool interno, ma
+   da tenere d'occhio.

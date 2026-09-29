@@ -1,17 +1,20 @@
 import { useState } from 'react'
-import { Navigate, useNavigate } from 'react-router-dom'
+import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../lib/auth/AuthContext'
 import { isSupabaseConfigured } from '../lib/supabaseClient'
 
 export function LoginPage() {
   const { session, signIn } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
-  if (session) return <Navigate to="/admin" replace />
+  const from = (location.state as { from?: Location })?.from?.pathname ?? '/'
+
+  if (session) return <Navigate to={from} replace />
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -23,15 +26,15 @@ export function LoginPage() {
       setError(error)
       return
     }
-    navigate('/admin')
+    navigate(from, { replace: true })
   }
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
       <div className="w-full max-w-sm rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
         <p className="text-sm font-semibold text-slate-900">ASISD · Controllo di Gestione</p>
-        <h1 className="mt-1 text-lg font-semibold text-slate-900">Accesso amministrazione</h1>
-        <p className="mt-1 text-sm text-slate-500">Riservato al team ASISD per la gestione degli studi clienti.</p>
+        <h1 className="mt-1 text-lg font-semibold text-slate-900">Accesso</h1>
+        <p className="mt-1 text-sm text-slate-500">Con le credenziali del tuo studio, o del team ASISD per l'amministrazione.</p>
 
         {!isSupabaseConfigured && (
           <p className="mt-4 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">

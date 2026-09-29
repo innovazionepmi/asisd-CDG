@@ -39,41 +39,47 @@ interface YearBundle {
 export function DashboardPage() {
   const [year, setYear] = useState(DEFAULT_YEAR)
   const [data, setData] = useState<YearBundle | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     let cancelled = false
     async function load() {
-      const [channels, categories, accounts, visits, priorVisits, quotes, production, priorProduction, pl, priorPl, cashflow, priorBaseline] =
-        await Promise.all([
-          dataProvider.listChannels(),
-          dataProvider.listTreatmentCategories(),
-          dataProvider.listPlAccounts(),
-          dataProvider.getMonthlyVisits(year),
-          dataProvider.getMonthlyVisits(year - 1),
-          dataProvider.getQuotesMonthly(year),
-          dataProvider.getProductionMonthly(year),
-          dataProvider.getProductionMonthly(year - 1),
-          dataProvider.getPlQuarterly(year),
-          dataProvider.getPlQuarterly(year - 1),
-          dataProvider.getCashflowMonthly(year),
-          dataProvider.getKpiPriorYearBaseline(year - 1),
-        ])
-      if (cancelled) return
-      setData({
-        channels,
-        categories,
-        accounts,
-        visits,
-        priorVisits,
-        quotes,
-        production,
-        priorProduction,
-        pl,
-        priorPl,
-        cashflow,
-        revenueBaselinePrior: priorBaseline.find((b) => b.metricKey === 'economics.revenue')?.annualValue ?? null,
-        molBaselinePrior: priorBaseline.find((b) => b.metricKey === 'economics.mol')?.annualValue ?? null,
-      })
+      setError(null)
+      try {
+        const [channels, categories, accounts, visits, priorVisits, quotes, production, priorProduction, pl, priorPl, cashflow, priorBaseline] =
+          await Promise.all([
+            dataProvider.listChannels(),
+            dataProvider.listTreatmentCategories(),
+            dataProvider.listPlAccounts(),
+            dataProvider.getMonthlyVisits(year),
+            dataProvider.getMonthlyVisits(year - 1),
+            dataProvider.getQuotesMonthly(year),
+            dataProvider.getProductionMonthly(year),
+            dataProvider.getProductionMonthly(year - 1),
+            dataProvider.getPlQuarterly(year),
+            dataProvider.getPlQuarterly(year - 1),
+            dataProvider.getCashflowMonthly(year),
+            dataProvider.getKpiPriorYearBaseline(year - 1),
+          ])
+        if (cancelled) return
+        setData({
+          channels,
+          categories,
+          accounts,
+          visits,
+          priorVisits,
+          quotes,
+          production,
+          priorProduction,
+          pl,
+          priorPl,
+          cashflow,
+          revenueBaselinePrior: priorBaseline.find((b) => b.metricKey === 'economics.revenue')?.annualValue ?? null,
+          molBaselinePrior: priorBaseline.find((b) => b.metricKey === 'economics.mol')?.annualValue ?? null,
+        })
+      } catch (err) {
+        if (!cancelled) setError(err instanceof Error ? err.message : 'Errore imprevisto nel caricamento dei dati.')
+      }
     }
     load()
     return () => {
@@ -171,7 +177,9 @@ export function DashboardPage() {
         actions={<YearSelect year={year} onChange={setYear} years={SELECTABLE_YEARS} />}
       />
 
-      {!view ? (
+      {error ? (
+        <p className="rounded-lg bg-rose-50 px-4 py-3 text-sm text-rose-700">Errore nel caricamento: {error}</p>
+      ) : !view ? (
         <p className="text-sm text-slate-400">Caricamento…</p>
       ) : (
         <div className="space-y-6">

@@ -23,9 +23,17 @@ import type {
 // supabase/migrations/*.sql via @supabase/supabase-js. Stessa interfaccia
 // di localFixtureProvider.ts.
 //
-// LIMITE NOTO (v1): non esiste ancora uno studio-switcher/login in UI, quindi
-// lo studio corrente viene letto da VITE_DEFAULT_STUDIO_ID. Da sostituire con
-// il primo studio_members dell'utente autenticato quando si aggiunge l'auth.
+// Lo studio corrente non è più letto da una variabile d'ambiente fissa:
+// viene risolto per l'utente loggato (prima riga di studio_members) da
+// StudioContext (src/lib/studio/StudioContext.tsx) e comunicato qui via
+// setCurrentStudioId(). v1: un utente vede un solo studio (il primo
+// trovato), nessuno studio-switcher per chi appartiene a più studi.
+
+let currentStudioId: string | null = null
+
+export function setCurrentStudioId(id: string | null) {
+  currentStudioId = id
+}
 
 function requireClient() {
   if (!supabase) throw new Error('Supabase non configurato: impostare VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY.')
@@ -33,9 +41,8 @@ function requireClient() {
 }
 
 function requireStudioId(): string {
-  const id = import.meta.env.VITE_DEFAULT_STUDIO_ID as string | undefined
-  if (!id) throw new Error('VITE_DEFAULT_STUDIO_ID non impostato.')
-  return id
+  if (!currentStudioId) throw new Error('Nessuno studio associato alla sessione corrente.')
+  return currentStudioId
 }
 
 export const supabaseProvider: DataProvider = {

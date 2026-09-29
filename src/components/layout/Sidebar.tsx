@@ -1,5 +1,7 @@
 import clsx from 'clsx'
 import { NavLink } from 'react-router-dom'
+import { useAuth } from '../../lib/auth/AuthContext'
+import { useStudio } from '../../lib/studio/StudioContext'
 import { isSupabaseConfigured } from '../../lib/supabaseClient'
 
 const NAV_ITEMS = [
@@ -12,10 +14,13 @@ const NAV_ITEMS = [
 ]
 
 export function Sidebar() {
+  const { session, signOut } = useAuth()
+  const studio = useStudio()
+
   return (
     <aside className="flex h-screen w-60 shrink-0 flex-col border-r border-slate-200 bg-white">
       <div className="px-5 py-5">
-        <p className="text-sm font-semibold tracking-wide text-slate-900">ASISD · CdG</p>
+        <p className="text-sm font-semibold tracking-wide text-slate-900">{studio.studioName ?? 'ASISD · CdG'}</p>
         <p className="text-xs text-slate-400">Controllo di Gestione PMOS</p>
       </div>
       <nav className="flex-1 space-y-1 px-3">
@@ -36,7 +41,7 @@ export function Sidebar() {
           </NavLink>
         ))}
       </nav>
-      <div className="border-t border-slate-100 px-3 py-3">
+      <div className="space-y-1 border-t border-slate-100 px-3 py-3">
         <NavLink
           to="/admin"
           className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium text-slate-500 transition-colors hover:bg-slate-50 hover:text-slate-900"
@@ -44,6 +49,15 @@ export function Sidebar() {
           <span aria-hidden>🔐</span>
           Amministrazione
         </NavLink>
+        {session && (
+          <button
+            onClick={signOut}
+            className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm font-medium text-slate-500 transition-colors hover:bg-slate-50 hover:text-slate-900"
+          >
+            <span aria-hidden>↩</span>
+            Esci
+          </button>
+        )}
       </div>
       <div className="border-t border-slate-100 px-5 py-4">
         <span
