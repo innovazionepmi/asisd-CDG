@@ -7,6 +7,8 @@ interface AuthState {
   loading: boolean
   signIn: (email: string, password: string) => Promise<{ error: string | null }>
   signOut: () => Promise<void>
+  requestPasswordReset: (email: string) => Promise<{ error: string | null }>
+  updatePassword: (newPassword: string) => Promise<{ error: string | null }>
 }
 
 const AuthContext = createContext<AuthState | null>(null)
@@ -26,6 +28,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(data.session)
       setLoading(false)
     })
+    // L'evento PASSWORD_RECOVERY arriva anche qui quando l'utente apre il
+    // link ricevuto via email: supabase-js stabilisce una sessione
+    // temporanea leggendo il token dall'URL (comportamento di default,
+    // detectSessionInUrl). ResetPasswordPage la usa per impostare la
+    // nuova password.
     const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => setSession(s))
     return () => sub.subscription.unsubscribe()
   }, [])
@@ -40,7 +47,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase?.auth.signOut()
   }
 
-  return <AuthContext.Provider value={{ session, loading, signIn, signOut }}>{children}</AuthContext.Provider>
+  async function requestPasswordReset(email: string) {
+    if (!supabase) return { error: 'Supabase non configurato.' }
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/#/reset-password`,
+    })
+    return { error: error?.message ?? null }
+  }
+
+  async function updatePassword(newPassword: string) {
+    if (!supabase) return { error: 'Supabase non configurato.' }
+    const { error } = await supabase.auth.updateUser({ password: newPassword })
+    return { error: error?.message ?? null }
+  }
+
+  return (
+    <AuthContext.Provider value={{ session, loading, signIn, signOut, requestPasswordReset, updatePassword }}>
+      {children}
+    </AuthContext.Provider>
+  )
 }
 
 export function useAuth() {

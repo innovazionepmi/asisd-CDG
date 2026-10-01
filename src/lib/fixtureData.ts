@@ -5,11 +5,13 @@ import type {
   Channel,
   HygieneSessionsMonthly,
   KpiPriorYearBaseline,
+  KpiTarget,
   PlAccount,
   PlQuarterly,
   ProductionMonthly,
   ProductionTitolareMonthly,
   QuotesMonthly,
+  SaturationMonthly,
   StudioConfig,
   TreatmentCategory,
   MonthlyVisit,
@@ -91,6 +93,16 @@ const REACTIVATED_2025 = [1, 1, 5, 3, 1, 0, 5, 3, 7, 10, 10, 10]
 const HYGIENE_SESSIONS_2025 = [85, 116, 139, 135, 124, 109, 154, 26, 188, 180, 155, 180]
 const PRODUCTION_TOTAL_2025 = [59716, 133932, 198138, 144040, 162190, 149300, 139508, 91405, 144413, 201452, 138450, 127000]
 const PRODUCTION_TITOLARE_2025 = [28860, 104937, 144036, 96129, 116911, 96000, 82240, 74118, 97226, 146299, 77137, 57900]
+const SATURATION_PCT_2025 = [0.5115, 0.7199, 0.7269, 0.7293, 0.7177, 0.7057, 0.7704, 0.2948, 0.7934, 0.8242, 0.732, 0.6634]
+
+// Obiettivi mensili ("Obiettivo") presi 1:1 dal foglio Saturazione.
+const NEW_PATIENTS_TARGET_2025 = [35, 35, 35, 38, 38, 38, 50, 50, 50, 50, 50, 50]
+const REACTIVATED_TARGET_2025 = [2, 2, 2, 9.824726135, 9.824726135, 9.824726135, 9.209805335, 9.209805335, 9.209805335, 8.849315068, 8.849315068, 8.849315068]
+const PRODUCTION_TARGET_2025 = [140000, 168000, 168000, 168000, 168000, 172000, 160000, 50000, 170000, 180000, 180000, 180000]
+const PRODUCTION_TITOLARE_TARGET_2025 = [84000, 100800, 100800, 97440, 97440, 99760, 88000, 27500, 93500, 95400, 95400, 95400]
+const TITOLARE_SHARE_TARGET_2025 = [0.6, 0.6, 0.6, 0.58, 0.58, 0.58, 0.55, 0.55, 0.55, 0.53, 0.53, 0.53]
+const HYGIENE_TARGET_2025 = [133.3333333, 133.3333333, 133.3333333, 140, 140, 160, 170, 40, 180, 180, 193, 193]
+const SATURATION_TARGET_2025 = [0.5, 0.55, 0.55, 0.6, 0.6, 0.65, 0.65, 0.7, 0.7, 0.7, 0.75, 0.75]
 
 const QUOTES_NEW_ISSUED_COUNT_2025 = [37, 70, 71, 61, 41, 64, 59, 50, 63, 64, 54, 34]
 const QUOTES_NEW_ISSUED_VALUE_2025 = [163723, 414724, 346130, 261094, 178184, 357180, 267925, 259356, 297410, 297419, 277088, 164522]
@@ -153,6 +165,7 @@ export interface FixtureBundle {
   productionMonthly: ProductionMonthly[]
   productionTitolareMonthly: ProductionTitolareMonthly[]
   hygieneSessionsMonthly: HygieneSessionsMonthly[]
+  saturationMonthly: SaturationMonthly[]
   plQuarterly: PlQuarterly[]
   cashflowMonthly: CashflowMonthly[]
 }
@@ -233,6 +246,13 @@ function buildYear(year: number, growthFactor: number): FixtureBundle {
     hygieneSessionsMonthly.push({ periodMonth: period, sessionCount: Math.round(v) })
   })
 
+  // Percentuale: non ha senso "crescerla" con lo stesso fattore dei ricavi,
+  // resta uguale tra gli anni demo.
+  const saturationMonthly: SaturationMonthly[] = []
+  monthlySeries(year, SATURATION_PCT_2025, (period, v) => {
+    saturationMonthly.push({ periodMonth: period, saturationPct: v })
+  })
+
   const plQuarterly: PlQuarterly[] = []
   for (const account of PL_ACCOUNTS) {
     const base = PL_QUARTERLY_2025[account.id]
@@ -256,7 +276,16 @@ function buildYear(year: number, growthFactor: number): FixtureBundle {
     })
   })
 
-  return { monthlyVisits, quotesMonthly, productionMonthly, productionTitolareMonthly, hygieneSessionsMonthly, plQuarterly, cashflowMonthly }
+  return {
+    monthlyVisits,
+    quotesMonthly,
+    productionMonthly,
+    productionTitolareMonthly,
+    hygieneSessionsMonthly,
+    saturationMonthly,
+    plQuarterly,
+    cashflowMonthly,
+  }
 }
 
 function monthIndex(period: string): number {
@@ -267,3 +296,23 @@ export const FIXTURES_BY_YEAR: Record<number, FixtureBundle> = {
   2025: buildYear(2025, 1),
   2026: buildYear(2026, 1.09),
 }
+
+// Obiettivi mensili (kpi_targets) per entrambi gli anni demo. I target in
+// valuta/conteggio crescono come gli attuali (+9% nel 2026, stessa logica
+// di buildYear); i target percentuali restano invariati tra gli anni.
+function buildTargets(year: number, growthFactor: number): KpiTarget[] {
+  const targets: KpiTarget[] = []
+  const push = (metricKey: string, values: number[]) => {
+    values.forEach((v, i) => targets.push({ periodStart: monthKey(year, i + 1), metricKey, targetValue: v }))
+  }
+  push('traffic.new_patients.total', grow(NEW_PATIENTS_TARGET_2025, growthFactor))
+  push('traffic.reactivated.total', grow(REACTIVATED_TARGET_2025, growthFactor))
+  push('production.total', grow(PRODUCTION_TARGET_2025, growthFactor))
+  push('production.titolare', grow(PRODUCTION_TITOLARE_TARGET_2025, growthFactor))
+  push('production.hygiene_sessions', grow(HYGIENE_TARGET_2025, growthFactor))
+  push('production.titolare_share', TITOLARE_SHARE_TARGET_2025)
+  push('production.saturation_pct', SATURATION_TARGET_2025)
+  return targets
+}
+
+export const KPI_TARGETS: KpiTarget[] = [...buildTargets(2025, 1), ...buildTargets(2026, 1.09)]

@@ -71,6 +71,8 @@ della gallina): va inserito manualmente via SQL la prima volta — vedi
 |---|---|
 | Saturazione (traffico, righe 5-13) | `monthly_visits` + `acquisition_channels` |
 | Saturazione (produzione, righe 15-28) | `production_monthly`, `production_titolare_monthly`, `hygiene_sessions_monthly`, `treatment_categories` |
+| Saturazione, riga 12 ("% Saturazione Progressiva") | `saturation_monthly` (valore inserito a mano, non derivato da `studio_configs` — verificato) |
+| Colonne "Obiettivo" di Traffico/Produzione/Saturazione | `kpi_targets` (metric_key: `traffic.new_patients.total`, `traffic.reactivated.total`, `production.total`, `production.titolare`, `production.titolare_share`, `production.hygiene_sessions`, `production.saturation_pct`) |
 | Customer Experience | `quotes_monthly`, `quotes_portfolio_opening`, `quotes_pipeline_forecast_monthly` |
 | Co.Ge Trimestrale | `pl_quarterly` + `pl_accounts`, grana trimestrale (MDC/MOL calcolati in `v_pl_summary_quarterly`) |
 | CashFlow | `cashflow_monthly` |

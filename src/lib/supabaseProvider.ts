@@ -7,6 +7,7 @@ import type {
   ChannelType,
   HygieneSessionsMonthly,
   KpiPriorYearBaseline,
+  KpiTarget,
   PlAccount,
   PlAccountType,
   PlQuarterly,
@@ -14,6 +15,7 @@ import type {
   ProductionTitolareMonthly,
   QuotesMonthly,
   PatientSegment,
+  SaturationMonthly,
   StudioConfig,
   TreatmentCategory,
   MonthlyVisit,
@@ -239,6 +241,27 @@ export const supabaseProvider: DataProvider = {
     if (error) throw error
   },
 
+  async getSaturationMonthly(year) {
+    const db = requireClient()
+    const studioId = requireStudioId()
+    const { data, error } = await db
+      .from('saturation_monthly')
+      .select('period_month, saturation_pct')
+      .eq('studio_id', studioId)
+      .gte('period_month', `${year}-01-01`)
+      .lte('period_month', `${year}-12-01`)
+    if (error) throw error
+    return (data ?? []).map((r): SaturationMonthly => ({ periodMonth: r.period_month, saturationPct: r.saturation_pct }))
+  },
+  async upsertSaturationMonthly(row) {
+    const db = requireClient()
+    const studioId = requireStudioId()
+    const { error } = await db
+      .from('saturation_monthly')
+      .upsert({ studio_id: studioId, period_month: row.periodMonth, saturation_pct: row.saturationPct }, { onConflict: 'studio_id,period_month' })
+    if (error) throw error
+  },
+
   async getPlQuarterly(year) {
     const db = requireClient()
     const studioId = requireStudioId()
@@ -321,6 +344,28 @@ export const supabaseProvider: DataProvider = {
     const { error } = await db.from('kpi_prior_year_baseline').upsert(
       { studio_id: studioId, fiscal_year: row.fiscalYear, metric_key: row.metricKey, annual_value: row.annualValue },
       { onConflict: 'studio_id,fiscal_year,metric_key' },
+    )
+    if (error) throw error
+  },
+
+  async getKpiTargets(year) {
+    const db = requireClient()
+    const studioId = requireStudioId()
+    const { data, error } = await db
+      .from('kpi_targets')
+      .select('period_start, metric_key, target_value')
+      .eq('studio_id', studioId)
+      .gte('period_start', `${year}-01-01`)
+      .lte('period_start', `${year}-12-01`)
+    if (error) throw error
+    return (data ?? []).map((r): KpiTarget => ({ periodStart: r.period_start, metricKey: r.metric_key, targetValue: r.target_value }))
+  },
+  async upsertKpiTarget(row) {
+    const db = requireClient()
+    const studioId = requireStudioId()
+    const { error } = await db.from('kpi_targets').upsert(
+      { studio_id: studioId, period_start: row.periodStart, metric_key: row.metricKey, target_value: row.targetValue },
+      { onConflict: 'studio_id,period_start,metric_key' },
     )
     if (error) throw error
   },

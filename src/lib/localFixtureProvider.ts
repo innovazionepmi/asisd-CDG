@@ -3,6 +3,7 @@ import {
   CHANNELS,
   FIXTURES_BY_YEAR,
   KPI_PRIOR_YEAR_BASELINE,
+  KPI_TARGETS,
   PL_ACCOUNTS,
   STUDIO_CONFIGS,
   TREATMENT_CATEGORIES,
@@ -12,10 +13,12 @@ import type {
   CashflowMonthly,
   HygieneSessionsMonthly,
   KpiPriorYearBaseline,
+  KpiTarget,
   PlQuarterly,
   ProductionMonthly,
   ProductionTitolareMonthly,
   QuotesMonthly,
+  SaturationMonthly,
   MonthlyVisit,
 } from './types'
 
@@ -63,6 +66,8 @@ let hygieneSessionsMonthly: HygieneSessionsMonthly[] | null = null
 let plQuarterly: PlQuarterly[] | null = null
 let cashflowMonthly: CashflowMonthly[] | null = null
 let kpiPriorYearBaseline: KpiPriorYearBaseline[] | null = null
+let saturationMonthly: SaturationMonthly[] | null = null
+let kpiTargets: KpiTarget[] | null = null
 
 function byYear<T extends { periodMonth: string } | { periodQuarter: string }>(rows: T[], year: number): T[] {
   return rows.filter((r) => {
@@ -140,6 +145,16 @@ export const localFixtureProvider: DataProvider = {
     saveTable('hygieneSessionsMonthly', hygieneSessionsMonthly)
   },
 
+  async getSaturationMonthly(year) {
+    saturationMonthly ??= loadTable('saturationMonthly', seedFor((b) => b.saturationMonthly))
+    return byYear(saturationMonthly, year)
+  },
+  async upsertSaturationMonthly(row) {
+    saturationMonthly ??= loadTable('saturationMonthly', seedFor((b) => b.saturationMonthly))
+    saturationMonthly = upsertBy(saturationMonthly, row, (r) => r.periodMonth === row.periodMonth)
+    saveTable('saturationMonthly', saturationMonthly)
+  },
+
   async getPlQuarterly(year) {
     plQuarterly ??= loadTable('plQuarterly', seedFor((b) => b.plQuarterly))
     return byYear(plQuarterly, year)
@@ -168,5 +183,15 @@ export const localFixtureProvider: DataProvider = {
     kpiPriorYearBaseline ??= loadTable('kpiPriorYearBaseline', KPI_PRIOR_YEAR_BASELINE)
     kpiPriorYearBaseline = upsertBy(kpiPriorYearBaseline, row, (r) => r.fiscalYear === row.fiscalYear && r.metricKey === row.metricKey)
     saveTable('kpiPriorYearBaseline', kpiPriorYearBaseline)
+  },
+
+  async getKpiTargets(year) {
+    kpiTargets ??= loadTable('kpiTargets', KPI_TARGETS)
+    return kpiTargets.filter((t) => t.periodStart.startsWith(String(year)))
+  },
+  async upsertKpiTarget(row) {
+    kpiTargets ??= loadTable('kpiTargets', KPI_TARGETS)
+    kpiTargets = upsertBy(kpiTargets, row, (r) => r.periodStart === row.periodStart && r.metricKey === row.metricKey)
+    saveTable('kpiTargets', kpiTargets)
   },
 }

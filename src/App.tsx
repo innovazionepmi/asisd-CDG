@@ -11,6 +11,7 @@ import { EconomicsPage } from './pages/EconomicsPage'
 import { LoginPage } from './pages/LoginPage'
 import { PreventiviPage } from './pages/PreventiviPage'
 import { ProduzionePage } from './pages/ProduzionePage'
+import { SaturazionePage } from './pages/SaturazionePage'
 import { TrafficoPage } from './pages/TrafficoPage'
 
 export default function App() {
@@ -39,6 +40,7 @@ export default function App() {
               <Route path="/traffico" element={<TrafficoPage />} />
               <Route path="/preventivi" element={<PreventiviPage />} />
               <Route path="/produzione" element={<ProduzionePage />} />
+              <Route path="/saturazione" element={<SaturazionePage />} />
               <Route path="/economics" element={<EconomicsPage />} />
               <Route path="/cashflow" element={<CashflowPage />} />
             </Route>

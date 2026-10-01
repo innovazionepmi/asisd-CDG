@@ -1,6 +1,6 @@
 # Stato del progetto — ASISD Controllo di Gestione
 
-Ultimo aggiornamento: 2026-09-29
+Ultimo aggiornamento: 2026-10-01
 
 ## Contesto
 
@@ -130,59 +130,118 @@ mostrano solo i dati dello studio dell'utente loggato — non più un
   infinito (nessun guard "solo se i dati esistono"), quindi non sono state
   toccate.
 
-**Per testare**: il superadmin creato il 15/09 non è automaticamente
-titolare di nessuno studio (sono due ruoli separati per design). Per
-vederlo funzionare da titolare, nell'SQL Editor di Supabase:
+**Per aggiungere un titolare a uno studio a mano** (bootstrap/test, non
+serve più per il flusso normale che ora passa dalla UI admin):
 ```sql
 insert into studio_members (studio_id, user_id, role)
-values (
-  (select id from studios order by created_at desc limit 1),
-  '<uuid del tuo utente>',
-  'owner'
-);
+select (select id from studios order by created_at desc limit 1), id, 'owner'
+from auth.users where email = '<email>';
 ```
-Poi ricarica l'app da normale (non `/admin`): dovrebbe chiedere login e,
-una volta autenticato, mostrare il nome dello Studio Test in sidebar.
+
+## Sessione 2026-09-29: deploy, test end-to-end, rifiniture UX
+
+**Tutto verificato funzionante in produzione**, non solo in teoria:
+- Repo creato, collegato a Vercel, **login titolare testato con dati reali**
+  (non solo modalità demo): il titolare vede solo il proprio studio, logout
+  riporta a `/login` e blocca l'accesso finché non si rifà login — esattamente
+  il comportamento richiesto.
+- **Flusso admin testato end-to-end con invio email reale**: Emilio ha
+  collegato Brevo come SMTP custom su Supabase Auth (l'invio email di
+  default di Supabase è limitato/inaffidabile per uso oltre il test) — la
+  creazione di un nuovo studio dalla dashboard `/admin` invia davvero
+  l'invito e il titolare può impostare la password. Confermato funzionante.
+- Bug di navigazione trovati durante il test e risolti: nessun modo per
+  tornare dall'area `/admin` all'app normale (aggiunto link "← Torna
+  all'app"), e un utente admin-ma-non-titolare che finiva sulla schermata
+  "Nessuno studio associato" restava bloccato (aggiunto link "Vai
+  all'amministrazione").
+- Chiarito in UI (non solo a parole) quando il valore AFP manuale non
+  serve: la pagina Economics ora mostra una nota esplicita quando per
+  l'anno precedente esistono già dati trimestrali reali, invece di
+  lasciare il campo a 0 senza spiegazione.
+- **Merge completato**: `staging` → `main`, produzione
+  (`asisd-cdg.vercel.app`) ora gira sull'ultima versione con login
+  obbligatorio. Prassi concordata: d'ora in poi si torna a testare prima
+  su `staging` e mergiare solo dopo conferma (oggi fatto diretto su `main`
+  in via eccezionale, in fase di costruzione).
+- Chiarito con Emilio: i campi "Minuti apertura teorici" e "Target
+  CFMP/saturazione" nel form di creazione studio **sono salvati ma non
+  ancora usati da nessun calcolo** — servono per la futura pagina
+  Saturazione (vedi Prossimo passo). Valori placeholder oggi non hanno
+  alcun effetto.
+
+## Sessione 2026-10-01: pagina Saturazione + obiettivi mensili ovunque
+
+Riletto l'Excel originale prima di scrivere codice (non fidarsi della sola
+memoria tra sessioni): confermato che "% Saturazione (Progressiva)" nel
+foglio Saturazione è un **valore inserito a mano ogni mese**, non calcolato
+da poltrone×minuti di apertura come si poteva pensare — quei campi di
+`studio_configs` restano dati di contesto non ancora usati da nessun
+calcolo, non è cambiato.
+
+Costruito:
+- `supabase/migrations/0007_saturation_and_targets.sql` — nuova tabella
+  `saturation_monthly` (stesso pattern di `hygiene_sessions_monthly`) +
+  nuove chiavi in `metric_catalog` (`production.titolare`,
+  `production.titolare_share`, `production.saturation_pct`).
+- **`kpi_targets` finalmente usato** (esisteva dallo schema iniziale,
+  nessuna pagina lo leggeva/scriveva): `dataProvider.getKpiTargets` /
+  `upsertKpiTarget` implementati in entrambi i provider.
+- Nuova pagina **Saturazione** (`src/pages/SaturazionePage.tsx`): valore
+  mensile + obiettivo + grafico trend + tabella completa.
+- **Obiettivi mensili aggiunti anche a Traffico e Produzione** (scelta
+  esplicita di Emilio: tutte le pagine insieme invece di partire da una
+  sola) — card KPI, form di inserimento e tabella di entrambe le pagine
+  ora mostrano Obiettivo/Scostamento, non solo il confronto vs anno
+  precedente.
+- Nuovo componente `PercentField` (l'utente digita "72", si salva 0.72).
+- Verificato in modalità demo (dati fixture reali, stessi numeri
+  dell'Excel): i tre nuovi/aggiornati moduli mostrano numeri che tornano
+  esatti col foglio originale (media saturazione 2025 = 68,2% come
+  B12/AVERAGE dell'Excel). **Non ancora verificato con Supabase reale** —
+  serve applicare `0007` sul progetto Supabase.
 
 ## Stato attuale / limiti noti
 
-- **Repo git creato e collegato**: `github.com/innovazionepmi/asisd-CDG`,
-  branch `main` (produzione) e `staging` (preview), entrambi deployati su
-  Vercel. Env vars impostate su Vercel (`VITE_SUPABASE_URL`,
-  `VITE_SUPABASE_ANON_KEY`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`).
-- Migrations applicate su Supabase: `0001` → `0006` (inclusa
-  `0005_platform_admin.sql` e `0006_public_read_shared_dimensions.sql`,
-  che completa tutte le policy RLS rimaste scoperte).
-- Superadmin bootstrappato in `platform_admins`, dashboard `/admin`
-  testata: crea studio + invito email (verificare che l'invito sia
-  arrivato davvero, non ancora confermato in questa sessione).
-- Studio di prova ("Studio Test") popolato con dati demo realistici
-  (2025, stessi numeri dell'Excel originale) via script SQL diretti — vedi
-  cronologia sessione per gli insert usati, non salvati come migration
-  perché sono dati di prova, non schema. Una policy RLS temporanea
-  (`TEMP_DEMO_anon_read_*`, da rimuovere) permette la lettura anonima solo
-  di questo studio, usata per verificare i grafici prima che esistesse il
-  login vero.
+- **Repo git**: `github.com/innovazionepmi/asisd-CDG`, branch `main`
+  (produzione, live e in uso) e `staging` (test prima del merge). Env vars
+  impostate su Vercel.
+- Migrations applicate su Supabase: `0001` → `0006`. **`0007` scritta in
+  questa sessione, non ancora applicata** — prossimo passo immediato.
+- Superadmin in `platform_admins`; almeno due studi nel sistema (Studio
+  Test + almeno uno creato dalla UI admin durante il test email).
+- Studio Test popolato con dati demo 2025 (stessi numeri dell'Excel
+  originale) via script SQL diretti — **non salvati come migration**
+  (sono dati di prova, non schema). I nuovi dati di Saturazione/obiettivi
+  non sono stati ancora inseriti per lo Studio Test (serve un nuovo script
+  SQL se si vuole vederli popolati anche lì, non solo in demo).
+- **Da fare, non urgente**: rimuovere le policy `TEMP_DEMO_anon_read_*`
+  (script di pulizia già pronto, vedi cronologia sessione 15/09).
 - Nessuno studio-switcher per chi appartiene a più studi (es. un
   `asisd_coach`): si prende sempre il primo `studio_members` trovato.
-  Accettabile per v1, da rivedere se serve davvero a qualcuno.
+  Accettabile per v1.
+- `studio_configs` (poltrone, minuti apertura, target CFMP) resta raccolto
+  ma non consumato da nessun calcolo — confermato di nuovo in questa
+  sessione che "% Saturazione" non ne dipende nell'Excel originale.
+- Bundle JS ~944KB minificato (avviso di build, non bloccante).
 - Assunzione aperta da validare con Andrea: se i preventivi "generali" (non
   solo prima visita) vadano rilevati mese per mese o a trimestre come il
   conto economico (vedi `docs/data-model.md`, sezione assunzioni).
 
 ## Prossimo passo
 
-1. **Verificare il login titolare end-to-end** con Supabase reale (vedi
-   riquadro sopra) — non ancora testato in questa sessione, solo la
-   modalità demo è stata confermata invariata.
-2. Rimuovere le policy `TEMP_DEMO_anon_read_*` (script di pulizia già
-   preparato in sessione) una volta finiti i test manuali, prima di
-   invitare uno studio vero.
-3. Decidere se/come estendere il flusso di creazione studio in `/admin`
-   per popolare anche `studio_configs` (oggi lo fa solo per lo Studio Test
-   creato a mano via SQL, non ancora per gli studi creati dalla UI admin —
-   controllare `api/admin/studios.ts`, che in realtà lo fa già: verificare
-   con un vero secondo studio creato dalla UI).
-4. Valutare code-splitting: il bundle JS è cresciuto a ~930KB minificato
-   (avviso di build, non bloccante) — non urgente per un tool interno, ma
-   da tenere d'occhio.
+1. Applicare `0007_saturation_and_targets.sql` sul progetto Supabase, poi
+   verificare la pagina Saturazione e gli obiettivi di Traffico/Produzione
+   con dati reali (non solo in demo).
+2. Tutti i 6 macro-blocchi dell'Excel originale sono ora rappresentati
+   nell'app (Traffico, Preventivi, Produzione, Saturazione, Economics,
+   Cashflow) — buon punto per fare un giro di revisione complessiva con
+   Andrea prima di proseguire con nuove funzionalità.
+3. Pulizie rimaste in coda (non bloccanti): rimuovere le policy
+   `TEMP_DEMO_anon_read_*`; valutare uno studio-switcher reale quando
+   servirà a qualcuno con più studi; risolvere l'assunzione aperta sui
+   preventivi "generali".
+
+Altre pulizie minori rimaste in coda (non bloccanti): rimuovere le policy
+`TEMP_DEMO_anon_read_*`, valutare se aggiungere uno studio-switcher reale
+quando servirà a qualcuno con più studi.

@@ -9,6 +9,7 @@ const NAV_ITEMS = [
   { to: '/traffico', label: 'Traffico', icon: '👥' },
   { to: '/preventivi', label: 'Preventivi', icon: '📋' },
   { to: '/produzione', label: 'Produzione', icon: '🦷' },
+  { to: '/saturazione', label: 'Saturazione', icon: '🪑' },
   { to: '/economics', label: 'Economics', icon: '📊' },
   { to: '/cashflow', label: 'Cashflow', icon: '💶' },
 ]

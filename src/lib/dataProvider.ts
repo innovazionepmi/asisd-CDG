@@ -3,11 +3,13 @@ import type {
   Channel,
   HygieneSessionsMonthly,
   KpiPriorYearBaseline,
+  KpiTarget,
   PlAccount,
   PlQuarterly,
   ProductionMonthly,
   ProductionTitolareMonthly,
   QuotesMonthly,
+  SaturationMonthly,
   StudioConfig,
   TreatmentCategory,
   MonthlyVisit,
@@ -37,6 +39,9 @@ export interface DataProvider {
   getHygieneSessionsMonthly(year: number): Promise<HygieneSessionsMonthly[]>
   upsertHygieneSessionsMonthly(row: HygieneSessionsMonthly): Promise<void>
 
+  getSaturationMonthly(year: number): Promise<SaturationMonthly[]>
+  upsertSaturationMonthly(row: SaturationMonthly): Promise<void>
+
   getPlQuarterly(year: number): Promise<PlQuarterly[]>
   upsertPlQuarterly(row: PlQuarterly): Promise<void>
 
@@ -45,4 +50,9 @@ export interface DataProvider {
 
   getKpiPriorYearBaseline(year: number): Promise<KpiPriorYearBaseline[]>
   upsertKpiPriorYearBaseline(row: KpiPriorYearBaseline): Promise<void>
+
+  // Tutti i target di un anno (mensili o trimestrali, qualunque metric_key);
+  // le pagine filtrano per il metricKey che gli interessa.
+  getKpiTargets(year: number): Promise<KpiTarget[]>
+  upsertKpiTarget(row: KpiTarget): Promise<void>
 }

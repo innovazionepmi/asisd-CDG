@@ -5,12 +5,18 @@ import { PageHeader } from '../components/layout/PageHeader'
 import { KpiCard } from '../components/ui/KpiCard'
 import { MonthSelect, YearSelect } from '../components/ui/PeriodSelect'
 import { NumberField } from '../components/ui/NumberField'
+import { PercentField } from '../components/ui/PercentField'
 import { SectionCard } from '../components/ui/SectionCard'
 import { deviationPct, formatEur, formatInt, formatPct, safeDiv, sum, trendOf } from '../lib/calc'
 import { allMonthsOfYear, monthKey, MONTH_LABELS_IT, MONTH_LABELS_SHORT_IT } from '../lib/periods'
 import { dataProvider } from '../lib/provider'
 import { DEFAULT_YEAR, SELECTABLE_YEARS } from '../lib/years'
-import type { HygieneSessionsMonthly, ProductionMonthly, ProductionTitolareMonthly, TreatmentCategory } from '../lib/types'
+import type { HygieneSessionsMonthly, KpiTarget, ProductionMonthly, ProductionTitolareMonthly, TreatmentCategory } from '../lib/types'
+
+const TOTAL_TARGET_KEY = 'production.total'
+const TITOLARE_TARGET_KEY = 'production.titolare'
+const TITOLARE_SHARE_TARGET_KEY = 'production.titolare_share'
+const HYGIENE_TARGET_KEY = 'production.hygiene_sessions'
 
 export function ProduzionePage() {
   const [year, setYear] = useState(DEFAULT_YEAR)
@@ -20,24 +26,33 @@ export function ProduzionePage() {
   const [priorProduction, setPriorProduction] = useState<ProductionMonthly[]>([])
   const [titolare, setTitolare] = useState<ProductionTitolareMonthly[]>([])
   const [hygiene, setHygiene] = useState<HygieneSessionsMonthly[]>([])
+  const [targets, setTargets] = useState<KpiTarget[]>([])
   const [draftCategories, setDraftCategories] = useState<Record<string, number>>({})
   const [draftTitolare, setDraftTitolare] = useState(0)
   const [draftHygiene, setDraftHygiene] = useState(0)
+  const [draftTargetTotal, setDraftTargetTotal] = useState(0)
+  const [draftTargetTitolare, setDraftTargetTitolare] = useState(0)
+  const [draftTargetTitolareShare, setDraftTargetTitolareShare] = useState(0)
+  const [draftTargetHygiene, setDraftTargetHygiene] = useState(0)
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved'>('idle')
 
+  const relevantKeys = [TOTAL_TARGET_KEY, TITOLARE_TARGET_KEY, TITOLARE_SHARE_TARGET_KEY, HYGIENE_TARGET_KEY]
+
   async function reload() {
-    const [cats, prod, priorProd, tit, hyg] = await Promise.all([
+    const [cats, prod, priorProd, tit, hyg, tg] = await Promise.all([
       dataProvider.listTreatmentCategories(),
       dataProvider.getProductionMonthly(year),
       dataProvider.getProductionMonthly(year - 1),
       dataProvider.getProductionTitolareMonthly(year),
       dataProvider.getHygieneSessionsMonthly(year),
+      dataProvider.getKpiTargets(year),
     ])
     setCategories(cats)
     setProduction(prod)
     setPriorProduction(priorProd)
     setTitolare(tit)
     setHygiene(hyg)
+    setTargets(tg.filter((t) => relevantKeys.includes(t.metricKey)))
   }
 
   useEffect(() => {
@@ -54,7 +69,12 @@ export function ProduzionePage() {
     setDraftCategories(nextCats)
     setDraftTitolare(titolare.find((t) => t.periodMonth === period)?.productionValue ?? 0)
     setDraftHygiene(hygiene.find((h) => h.periodMonth === period)?.sessionCount ?? 0)
-  }, [categories, production, titolare, hygiene, year, month])
+    const targetFor = (key: string) => targets.find((t) => t.periodStart === period && t.metricKey === key)?.targetValue ?? 0
+    setDraftTargetTotal(targetFor(TOTAL_TARGET_KEY))
+    setDraftTargetTitolare(targetFor(TITOLARE_TARGET_KEY))
+    setDraftTargetTitolareShare(targetFor(TITOLARE_SHARE_TARGET_KEY))
+    setDraftTargetHygiene(targetFor(HYGIENE_TARGET_KEY))
+  }, [categories, production, titolare, hygiene, targets, year, month])
 
   async function save() {
     setSaveState('saving')
@@ -63,6 +83,10 @@ export function ProduzionePage() {
       ...categories.map((cat) => dataProvider.upsertProductionMonthly({ periodMonth: period, treatmentCategoryId: cat.id, productionValue: draftCategories[cat.id] ?? 0 })),
       dataProvider.upsertProductionTitolareMonthly({ periodMonth: period, productionValue: draftTitolare }),
       dataProvider.upsertHygieneSessionsMonthly({ periodMonth: period, sessionCount: draftHygiene }),
+      dataProvider.upsertKpiTarget({ periodStart: period, metricKey: TOTAL_TARGET_KEY, targetValue: draftTargetTotal }),
+      dataProvider.upsertKpiTarget({ periodStart: period, metricKey: TITOLARE_TARGET_KEY, targetValue: draftTargetTitolare }),
+      dataProvider.upsertKpiTarget({ periodStart: period, metricKey: TITOLARE_SHARE_TARGET_KEY, targetValue: draftTargetTitolareShare }),
+      dataProvider.upsertKpiTarget({ periodStart: period, metricKey: HYGIENE_TARGET_KEY, targetValue: draftTargetHygiene }),
     ])
     await reload()
     setSaveState('saved')
@@ -76,6 +100,15 @@ export function ProduzionePage() {
     const titolareShare = safeDiv(titolareTotal, total)
     const hygieneTotal = sum(hygiene.map((h) => h.sessionCount))
 
+    const targetSum = (key: string) => sum(targets.filter((t) => t.metricKey === key).map((t) => t.targetValue))
+    const targetAvg = (key: string) => {
+      const rows = targets.filter((t) => t.metricKey === key)
+      return rows.length ? sum(rows.map((t) => t.targetValue)) / rows.length : null
+    }
+    const totalTarget = targetSum(TOTAL_TARGET_KEY)
+    const titolareShareTarget = targetAvg(TITOLARE_SHARE_TARGET_KEY)
+    const hygieneTarget = targetSum(HYGIENE_TARGET_KEY)
+
     const byCategory = categories.map((cat) => ({
       name: cat.name,
       value: sum(production.filter((p) => p.treatmentCategoryId === cat.id).map((p) => p.productionValue)),
@@ -88,17 +121,20 @@ export function ProduzionePage() {
     }))
 
     const table = allMonthsOfYear(year).map((period, i) => {
-      const monthRows = production.filter((p) => p.periodMonth === period)
+      const monthTotal = sum(production.filter((p) => p.periodMonth === period).map((p) => p.productionValue))
+      const target = targets.find((t) => t.periodStart === period && t.metricKey === TOTAL_TARGET_KEY)?.targetValue ?? null
       return {
         label: MONTH_LABELS_IT[i],
-        total: sum(monthRows.map((p) => p.productionValue)),
+        total: monthTotal,
         titolare: titolare.find((t) => t.periodMonth === period)?.productionValue ?? 0,
         hygiene: hygiene.find((h) => h.periodMonth === period)?.sessionCount ?? 0,
+        target,
+        deviation: target != null ? monthTotal - target : null,
       }
     })
 
-    return { total, totalPrior, titolareTotal, titolareShare, hygieneTotal, byCategory, trend, table }
-  }, [production, priorProduction, titolare, hygiene, categories, year])
+    return { total, totalPrior, titolareTotal, titolareShare, hygieneTotal, totalTarget, titolareShareTarget, hygieneTarget, byCategory, trend, table }
+  }, [production, priorProduction, titolare, hygiene, targets, categories, year])
 
   return (
     <div>
@@ -112,12 +148,25 @@ export function ProduzionePage() {
         <KpiCard
           label="Produzione totale"
           value={formatEur(view.total)}
-          deviation={deviationPct(view.total, view.totalPrior)}
-          trend={trendOf(deviationPct(view.total, view.totalPrior))}
-          deviationLabel="vs anno prec."
+          deviation={deviationPct(view.total, view.totalTarget)}
+          trend={trendOf(deviationPct(view.total, view.totalTarget))}
+          deviationLabel="vs obiettivo"
         />
-        <KpiCard label="Quota titolare" value={formatPct(view.titolareShare)} hint={formatEur(view.titolareTotal)} />
-        <KpiCard label="Sedute di igiene" value={formatInt(view.hygieneTotal)} />
+        <KpiCard
+          label="Quota titolare"
+          value={formatPct(view.titolareShare)}
+          hint={formatEur(view.titolareTotal)}
+          deviation={deviationPct(view.titolareShare, view.titolareShareTarget)}
+          trend={trendOf(deviationPct(view.titolareShare, view.titolareShareTarget))}
+          deviationLabel="vs obiettivo"
+        />
+        <KpiCard
+          label="Sedute di igiene"
+          value={formatInt(view.hygieneTotal)}
+          deviation={deviationPct(view.hygieneTotal, view.hygieneTarget)}
+          trend={trendOf(deviationPct(view.hygieneTotal, view.hygieneTarget))}
+          deviationLabel="vs obiettivo"
+        />
       </div>
 
       <div className="mb-6 grid grid-cols-1 gap-5 lg:grid-cols-2">
@@ -138,7 +187,7 @@ export function ProduzionePage() {
 
       <SectionCard
         title="Inserimento dati mensile"
-        subtitle="Seleziona il mese e aggiorna la produzione per tipologia"
+        subtitle="Seleziona il mese e aggiorna la produzione per tipologia e gli obiettivi"
         actions={<MonthSelect month={month} onChange={setMonth} />}
       >
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
@@ -152,6 +201,12 @@ export function ProduzionePage() {
           ))}
           <NumberField label="Di cui Titolare" value={draftTitolare} onChange={setDraftTitolare} />
           <NumberField label="Nr. sedute igiene" value={draftHygiene} onChange={setDraftHygiene} />
+        </div>
+        <div className="mt-4 grid grid-cols-2 gap-4 border-t border-slate-100 pt-4 sm:grid-cols-4">
+          <NumberField label="Obiettivo produzione totale" value={draftTargetTotal} onChange={setDraftTargetTotal} />
+          <NumberField label="Obiettivo produzione titolare" value={draftTargetTitolare} onChange={setDraftTargetTitolare} />
+          <PercentField label="Obiettivo quota titolare" value={draftTargetTitolareShare} onChange={setDraftTargetTitolareShare} />
+          <NumberField label="Obiettivo sedute igiene" value={draftTargetHygiene} onChange={setDraftTargetHygiene} />
         </div>
         <button
           onClick={save}
@@ -170,7 +225,9 @@ export function ProduzionePage() {
                 <th className="py-2 pr-4">Mese</th>
                 <th className="py-2 pr-4 text-right">Produzione totale</th>
                 <th className="py-2 pr-4 text-right">Di cui Titolare</th>
-                <th className="py-2 text-right">Sedute igiene</th>
+                <th className="py-2 pr-4 text-right">Sedute igiene</th>
+                <th className="py-2 pr-4 text-right">Obiettivo</th>
+                <th className="py-2 text-right">Scostamento</th>
               </tr>
             </thead>
             <tbody>
@@ -179,7 +236,9 @@ export function ProduzionePage() {
                   <td className="py-1.5 pr-4 text-slate-700">{row.label}</td>
                   <td className="py-1.5 pr-4 text-right font-medium text-slate-900">{formatEur(row.total)}</td>
                   <td className="py-1.5 pr-4 text-right text-slate-600">{formatEur(row.titolare)}</td>
-                  <td className="py-1.5 text-right text-slate-600">{formatInt(row.hygiene)}</td>
+                  <td className="py-1.5 pr-4 text-right text-slate-600">{formatInt(row.hygiene)}</td>
+                  <td className="py-1.5 pr-4 text-right text-slate-600">{formatEur(row.target)}</td>
+                  <td className="py-1.5 text-right text-slate-600">{formatEur(row.deviation)}</td>
                 </tr>
               ))}
             </tbody>

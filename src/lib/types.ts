@@ -96,3 +96,16 @@ export interface StudioConfig {
   theoreticalOpeningMinutes: number | null
   cfmpTarget: number | null
 }
+
+export interface SaturationMonthly {
+  periodMonth: string
+  saturationPct: number
+}
+
+// metricKey identifica il KPI (vedi metric_catalog); periodStart e' il
+// primo giorno del mese o del trimestre a seconda di metric_catalog.grain.
+export interface KpiTarget {
+  periodStart: string
+  metricKey: string
+  targetValue: number
+}
