@@ -202,7 +202,7 @@ export function ProduzionePage() {
           <NumberField label="Di cui Titolare" value={draftTitolare} onChange={setDraftTitolare} />
           <NumberField label="Nr. sedute igiene" value={draftHygiene} onChange={setDraftHygiene} />
         </div>
-        <div className="mt-4 grid grid-cols-2 gap-4 border-t border-slate-100 pt-4 sm:grid-cols-4">
+        <div className="mt-4 grid grid-cols-2 gap-4 border-t border-stone-100 pt-4 sm:grid-cols-4">
           <NumberField label="Obiettivo produzione totale" value={draftTargetTotal} onChange={setDraftTargetTotal} />
           <NumberField label="Obiettivo produzione titolare" value={draftTargetTitolare} onChange={setDraftTargetTitolare} />
           <PercentField label="Obiettivo quota titolare" value={draftTargetTitolareShare} onChange={setDraftTargetTitolareShare} />
@@ -211,7 +211,7 @@ export function ProduzionePage() {
         <button
           onClick={save}
           disabled={saveState === 'saving'}
-          className="mt-4 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:opacity-60"
+          className="mt-4 rounded-card bg-navy-700 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-navy-800-hover disabled:opacity-60"
         >
           {saveState === 'saving' ? 'Salvataggio…' : saveState === 'saved' ? 'Salvato ✓' : 'Salva mese'}
         </button>
@@ -221,7 +221,7 @@ export function ProduzionePage() {
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead>
-              <tr className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500">
+              <tr className="border-b border-stone-300 text-xs uppercase tracking-wide text-stone-500">
                 <th className="py-2 pr-4">Mese</th>
                 <th className="py-2 pr-4 text-right">Produzione totale</th>
                 <th className="py-2 pr-4 text-right">Di cui Titolare</th>
@@ -232,13 +232,13 @@ export function ProduzionePage() {
             </thead>
             <tbody>
               {view.table.map((row) => (
-                <tr key={row.label} className="border-b border-slate-100 last:border-0">
-                  <td className="py-1.5 pr-4 text-slate-700">{row.label}</td>
-                  <td className="py-1.5 pr-4 text-right font-medium text-slate-900">{formatEur(row.total)}</td>
-                  <td className="py-1.5 pr-4 text-right text-slate-600">{formatEur(row.titolare)}</td>
-                  <td className="py-1.5 pr-4 text-right text-slate-600">{formatInt(row.hygiene)}</td>
-                  <td className="py-1.5 pr-4 text-right text-slate-600">{formatEur(row.target)}</td>
-                  <td className="py-1.5 text-right text-slate-600">{formatEur(row.deviation)}</td>
+                <tr key={row.label} className="border-b border-stone-100 last:border-0">
+                  <td className="py-1.5 pr-4 text-navy-700">{row.label}</td>
+                  <td className="py-1.5 pr-4 text-right font-medium text-navy-900">{formatEur(row.total)}</td>
+                  <td className="py-1.5 pr-4 text-right text-stone-600">{formatEur(row.titolare)}</td>
+                  <td className="py-1.5 pr-4 text-right text-stone-600">{formatInt(row.hygiene)}</td>
+                  <td className="py-1.5 pr-4 text-right text-stone-600">{formatEur(row.target)}</td>
+                  <td className="py-1.5 text-right text-stone-600">{formatEur(row.deviation)}</td>
                 </tr>
               ))}
             </tbody>

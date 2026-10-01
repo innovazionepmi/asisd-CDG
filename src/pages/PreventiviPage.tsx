@@ -183,8 +183,8 @@ export function PreventiviPage() {
       >
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           {SEGMENTS.map((seg) => (
-            <div key={seg.id} className="rounded-lg border border-slate-100 p-4">
-              <p className="mb-3 text-sm font-semibold text-slate-800">{seg.label}</p>
+            <div key={seg.id} className="rounded-card border border-stone-100 p-4">
+              <p className="mb-3 text-sm font-semibold text-navy-900">{seg.label}</p>
               <div className="grid grid-cols-2 gap-3">
                 <NumberField label="Nr. emessi" value={draft[seg.id].issuedCount} onChange={(v) => updateDraft(seg.id, 'issuedCount', v)} />
                 <NumberField label="€ emessi" value={draft[seg.id].issuedValue} onChange={(v) => updateDraft(seg.id, 'issuedValue', v)} />
@@ -196,13 +196,13 @@ export function PreventiviPage() {
             </div>
           ))}
         </div>
-        <div className="mt-4 max-w-xs border-t border-slate-100 pt-4">
+        <div className="mt-4 max-w-xs border-t border-stone-100 pt-4">
           <PercentField label="Obiettivo % chiusura (generale)" value={draftTarget} onChange={setDraftTarget} />
         </div>
         <button
           onClick={save}
           disabled={saveState === 'saving'}
-          className="mt-4 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:opacity-60"
+          className="mt-4 rounded-card bg-navy-700 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-navy-800-hover disabled:opacity-60"
         >
           {saveState === 'saving' ? 'Salvataggio…' : saveState === 'saved' ? 'Salvato ✓' : 'Salva mese'}
         </button>
@@ -212,7 +212,7 @@ export function PreventiviPage() {
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead>
-              <tr className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500">
+              <tr className="border-b border-stone-300 text-xs uppercase tracking-wide text-stone-500">
                 <th className="py-2 pr-4">Mese</th>
                 <th className="py-2 pr-4 text-right">Nr. emessi</th>
                 <th className="py-2 pr-4 text-right">€ emessi</th>
@@ -227,17 +227,17 @@ export function PreventiviPage() {
             </thead>
             <tbody>
               {view.table.map((row) => (
-                <tr key={row.label} className="border-b border-slate-100 last:border-0">
-                  <td className="py-1.5 pr-4 text-slate-700">{row.label}</td>
-                  <td className="py-1.5 pr-4 text-right text-slate-600">{formatInt(row.issuedCount)}</td>
-                  <td className="py-1.5 pr-4 text-right text-slate-600">{formatEur(row.issuedValue)}</td>
-                  <td className="py-1.5 pr-4 text-right text-slate-600">{formatInt(row.confirmedCount)}</td>
-                  <td className="py-1.5 pr-4 text-right font-medium text-slate-900">{formatEur(row.confirmedValue)}</td>
-                  <td className="py-1.5 pr-4 text-right text-slate-600">{formatInt(row.lostCount)}</td>
-                  <td className="py-1.5 pr-4 text-right text-slate-600">{formatEur(row.lostValue)}</td>
-                  <td className="py-1.5 pr-4 text-right text-slate-600">{formatPct(row.closeRate)}</td>
-                  <td className="py-1.5 pr-4 text-right text-slate-600">{formatPct(row.target)}</td>
-                  <td className="py-1.5 text-right text-slate-600">{formatPct(row.deviation)}</td>
+                <tr key={row.label} className="border-b border-stone-100 last:border-0">
+                  <td className="py-1.5 pr-4 text-navy-700">{row.label}</td>
+                  <td className="py-1.5 pr-4 text-right text-stone-600">{formatInt(row.issuedCount)}</td>
+                  <td className="py-1.5 pr-4 text-right text-stone-600">{formatEur(row.issuedValue)}</td>
+                  <td className="py-1.5 pr-4 text-right text-stone-600">{formatInt(row.confirmedCount)}</td>
+                  <td className="py-1.5 pr-4 text-right font-medium text-navy-900">{formatEur(row.confirmedValue)}</td>
+                  <td className="py-1.5 pr-4 text-right text-stone-600">{formatInt(row.lostCount)}</td>
+                  <td className="py-1.5 pr-4 text-right text-stone-600">{formatEur(row.lostValue)}</td>
+                  <td className="py-1.5 pr-4 text-right text-stone-600">{formatPct(row.closeRate)}</td>
+                  <td className="py-1.5 pr-4 text-right text-stone-600">{formatPct(row.target)}</td>
+                  <td className="py-1.5 text-right text-stone-600">{formatPct(row.deviation)}</td>
                 </tr>
               ))}
             </tbody>

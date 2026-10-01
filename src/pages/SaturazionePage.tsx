@@ -112,7 +112,7 @@ export function SaturazionePage() {
         <button
           onClick={save}
           disabled={saveState === 'saving'}
-          className="mt-4 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:opacity-60"
+          className="mt-4 rounded-card bg-navy-700 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-navy-800-hover disabled:opacity-60"
         >
           {saveState === 'saving' ? 'Salvataggio…' : saveState === 'saved' ? 'Salvato ✓' : 'Salva mese'}
         </button>
@@ -122,7 +122,7 @@ export function SaturazionePage() {
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead>
-              <tr className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500">
+              <tr className="border-b border-stone-300 text-xs uppercase tracking-wide text-stone-500">
                 <th className="py-2 pr-4">Mese</th>
                 <th className="py-2 pr-4 text-right">% Saturazione</th>
                 <th className="py-2 pr-4 text-right">Obiettivo</th>
@@ -131,11 +131,11 @@ export function SaturazionePage() {
             </thead>
             <tbody>
               {view.table.map((row) => (
-                <tr key={row.label} className="border-b border-slate-100 last:border-0">
-                  <td className="py-1.5 pr-4 text-slate-700">{row.label}</td>
-                  <td className="py-1.5 pr-4 text-right font-medium text-slate-900">{formatPct(row.actual)}</td>
-                  <td className="py-1.5 pr-4 text-right text-slate-600">{formatPct(row.target)}</td>
-                  <td className="py-1.5 text-right text-slate-600">{formatPct(row.deviation)}</td>
+                <tr key={row.label} className="border-b border-stone-100 last:border-0">
+                  <td className="py-1.5 pr-4 text-navy-700">{row.label}</td>
+                  <td className="py-1.5 pr-4 text-right font-medium text-navy-900">{formatPct(row.actual)}</td>
+                  <td className="py-1.5 pr-4 text-right text-stone-600">{formatPct(row.target)}</td>
+                  <td className="py-1.5 text-right text-stone-600">{formatPct(row.deviation)}</td>
                 </tr>
               ))}
             </tbody>

@@ -74,18 +74,19 @@ export function AdminPage() {
 
   if (accessDenied) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
-        <div className="max-w-sm rounded-xl border border-slate-200 bg-white p-6 text-center shadow-sm">
-          <p className="text-sm font-semibold text-slate-900">Accesso negato</p>
-          <p className="mt-2 text-sm text-slate-500">
+      <div className="flex min-h-screen items-center justify-center bg-stone-100 px-4">
+        <div className="max-w-sm rounded-xl border border-stone-300 bg-white p-6 text-center shadow-card-sm">
+          <img src="/logo-asisd-transparent.png" alt="ASISD" className="mx-auto h-9 w-auto" />
+          <p className="mt-3 text-sm font-semibold text-navy-900">Accesso negato</p>
+          <p className="mt-2 text-sm text-stone-500">
             Il tuo account non è abilitato alla dashboard amministrativa. Contatta chi gestisce la piattaforma per essere
-            aggiunto a <code className="rounded bg-slate-100 px-1">platform_admins</code>.
+            aggiunto a <code className="rounded bg-stone-100 px-1">platform_admins</code>.
           </p>
           <div className="mt-4 flex items-center justify-center gap-4">
-            <Link to="/" className="text-sm text-blue-600 hover:underline">
+            <Link to="/" className="text-sm text-navy-700 hover:underline">
               Vai all'app
             </Link>
-            <button onClick={signOut} className="text-sm text-blue-600 hover:underline">
+            <button onClick={signOut} className="text-sm text-navy-700 hover:underline">
               Esci
             </button>
           </div>
@@ -101,10 +102,10 @@ export function AdminPage() {
         subtitle="Istanzia nuovi studi clienti e crea le credenziali per il titolare"
         actions={
           <div className="flex items-center gap-4">
-            <Link to="/" className="text-sm text-slate-500 hover:text-slate-800">
+            <Link to="/" className="text-sm text-stone-500 hover:text-navy-900">
               ← Torna all'app
             </Link>
-            <button onClick={signOut} className="text-sm text-slate-500 hover:text-slate-800">
+            <button onClick={signOut} className="text-sm text-stone-500 hover:text-navy-900">
               Esci
             </button>
           </div>
@@ -115,30 +116,30 @@ export function AdminPage() {
         <SectionCard title="Nuovo studio" subtitle="Il titolare riceverà un'email di invito per impostare la password">
           <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <label className="block sm:col-span-2">
-              <span className="mb-1 block text-xs font-medium text-slate-600">Nome studio</span>
+              <span className="mb-1 block text-xs font-medium text-stone-600">Nome studio</span>
               <input
                 required
                 value={form.name}
                 onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                className="w-full rounded-lg border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                className="w-full rounded-card border border-stone-300 px-3 py-1.5 text-sm outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500"
               />
             </label>
             <label className="block">
-              <span className="mb-1 block text-xs font-medium text-slate-600">P.IVA (opzionale)</span>
+              <span className="mb-1 block text-xs font-medium text-stone-600">P.IVA (opzionale)</span>
               <input
                 value={form.vatNumber}
                 onChange={(e) => setForm((f) => ({ ...f, vatNumber: e.target.value }))}
-                className="w-full rounded-lg border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                className="w-full rounded-card border border-stone-300 px-3 py-1.5 text-sm outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500"
               />
             </label>
             <label className="block sm:col-span-2 lg:col-span-1">
-              <span className="mb-1 block text-xs font-medium text-slate-600">Email titolare</span>
+              <span className="mb-1 block text-xs font-medium text-stone-600">Email titolare</span>
               <input
                 type="email"
                 required
                 value={form.ownerEmail}
                 onChange={(e) => setForm((f) => ({ ...f, ownerEmail: e.target.value }))}
-                className="w-full rounded-lg border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                className="w-full rounded-card border border-stone-300 px-3 py-1.5 text-sm outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500"
               />
             </label>
             <NumberField label="Nr. poltrone" value={form.numChairs} onChange={(v) => setForm((f) => ({ ...f, numChairs: v }))} />
@@ -151,12 +152,12 @@ export function AdminPage() {
             <NumberField label="Target CFMP/saturazione" value={form.cfmpTarget} onChange={(v) => setForm((f) => ({ ...f, cfmpTarget: v }))} step={0.1} />
 
             <div className="sm:col-span-2 lg:col-span-3">
-              {submitError && <p className="mb-2 text-sm text-rose-600">{submitError}</p>}
-              {successMessage && <p className="mb-2 text-sm text-emerald-600">{successMessage}</p>}
+              {submitError && <p className="mb-2 text-sm text-danger-600">{submitError}</p>}
+              {successMessage && <p className="mb-2 text-sm text-success-600">{successMessage}</p>}
               <button
                 type="submit"
                 disabled={submitting}
-                className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:opacity-60"
+                className="rounded-card bg-navy-700 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-navy-800-hover disabled:opacity-60"
               >
                 {submitting ? 'Creazione…' : 'Crea studio e invita titolare'}
               </button>
@@ -166,16 +167,16 @@ export function AdminPage() {
 
         <SectionCard title="Studi attivi" subtitle={`${studios.length} studi nel sistema`}>
           {loading ? (
-            <p className="text-sm text-slate-400">Caricamento…</p>
+            <p className="text-sm text-stone-500">Caricamento…</p>
           ) : loadError ? (
-            <p className="text-sm text-rose-600">{loadError}</p>
+            <p className="text-sm text-danger-600">{loadError}</p>
           ) : studios.length === 0 ? (
-            <p className="text-sm text-slate-400">Nessuno studio ancora creato.</p>
+            <p className="text-sm text-stone-500">Nessuno studio ancora creato.</p>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm">
                 <thead>
-                  <tr className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500">
+                  <tr className="border-b border-stone-300 text-xs uppercase tracking-wide text-stone-500">
                     <th className="py-2 pr-4">Studio</th>
                     <th className="py-2 pr-4">P.IVA</th>
                     <th className="py-2 pr-4">Titolare</th>
@@ -184,11 +185,11 @@ export function AdminPage() {
                 </thead>
                 <tbody>
                   {studios.map((s) => (
-                    <tr key={s.id} className="border-b border-slate-100 last:border-0">
-                      <td className="py-1.5 pr-4 font-medium text-slate-900">{s.name}</td>
-                      <td className="py-1.5 pr-4 text-slate-600">{s.vatNumber ?? '—'}</td>
-                      <td className="py-1.5 pr-4 text-slate-600">{s.ownerEmail ?? '—'}</td>
-                      <td className="py-1.5 text-slate-600">{new Date(s.createdAt).toLocaleDateString('it-IT')}</td>
+                    <tr key={s.id} className="border-b border-stone-100 last:border-0">
+                      <td className="py-1.5 pr-4 font-medium text-navy-900">{s.name}</td>
+                      <td className="py-1.5 pr-4 text-stone-600">{s.vatNumber ?? '—'}</td>
+                      <td className="py-1.5 pr-4 text-stone-600">{s.ownerEmail ?? '—'}</td>
+                      <td className="py-1.5 text-stone-600">{new Date(s.createdAt).toLocaleDateString('it-IT')}</td>
                     </tr>
                   ))}
                 </tbody>

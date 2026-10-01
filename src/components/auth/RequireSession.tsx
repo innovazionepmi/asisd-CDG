@@ -12,7 +12,7 @@ import { useAuth } from '../../lib/auth/AuthContext'
 export function RequireSession({ children }: { children: ReactNode }) {
   const { session, loading } = useAuth()
   const location = useLocation()
-  if (loading) return <p className="p-6 text-sm text-slate-400">Verifica sessione…</p>
+  if (loading) return <p className="p-6 text-sm text-stone-500">Verifica sessione…</p>
   if (!session) return <Navigate to="/login" state={{ from: location }} replace />
   return children
 }

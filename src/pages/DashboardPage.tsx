@@ -178,9 +178,9 @@ export function DashboardPage() {
       />
 
       {error ? (
-        <p className="rounded-lg bg-rose-50 px-4 py-3 text-sm text-rose-700">Errore nel caricamento: {error}</p>
+        <p className="rounded-card bg-danger-100 px-4 py-3 text-sm text-danger-600">Errore nel caricamento: {error}</p>
       ) : !view ? (
-        <p className="text-sm text-slate-400">Caricamento…</p>
+        <p className="text-sm text-stone-500">Caricamento…</p>
       ) : (
         <div className="space-y-6">
           <div className="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-6">

@@ -5,7 +5,7 @@ export function YearSelect({ year, onChange, years }: { year: number; onChange: 
     <select
       value={year}
       onChange={(e) => onChange(Number(e.target.value))}
-      className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 outline-none focus:border-blue-500"
+      className="rounded-card border border-stone-300 bg-white px-3 py-1.5 text-sm font-semibold text-navy-700 outline-none focus:border-amber-500"
     >
       {years.map((y) => (
         <option key={y} value={y}>
@@ -21,7 +21,7 @@ export function MonthSelect({ month, onChange }: { month: number; onChange: (m: 
     <select
       value={month}
       onChange={(e) => onChange(Number(e.target.value))}
-      className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 outline-none focus:border-blue-500"
+      className="rounded-card border border-stone-300 bg-white px-3 py-1.5 text-sm font-semibold text-navy-700 outline-none focus:border-amber-500"
     >
       {MONTH_LABELS_IT.map((label, i) => (
         <option key={label} value={i + 1}>
@@ -37,7 +37,7 @@ export function QuarterSelect({ quarter, onChange }: { quarter: number; onChange
     <select
       value={quarter}
       onChange={(e) => onChange(Number(e.target.value))}
-      className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 outline-none focus:border-blue-500"
+      className="rounded-card border border-stone-300 bg-white px-3 py-1.5 text-sm font-semibold text-navy-700 outline-none focus:border-amber-500"
     >
       {[1, 2, 3, 4].map((q) => (
         <option key={q} value={q}>

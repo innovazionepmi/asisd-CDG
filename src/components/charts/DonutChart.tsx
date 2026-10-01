@@ -30,7 +30,7 @@ export function DonutChart({ data, unit = 'currency', height = 260 }: { data: Do
 
 export function EmptyState({ height = 260 }: { height?: number }) {
   return (
-    <div style={{ height }} className="flex items-center justify-center text-sm text-slate-400">
+    <div style={{ height }} className="flex items-center justify-center text-sm text-stone-500">
       Nessun dato per il periodo selezionato
     </div>
   )

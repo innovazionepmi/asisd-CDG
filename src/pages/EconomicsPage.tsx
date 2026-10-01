@@ -176,7 +176,7 @@ export function EconomicsPage() {
       >
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           <div>
-            <p className="mb-3 text-sm font-semibold text-slate-800">Ricavi</p>
+            <p className="mb-3 text-sm font-semibold text-navy-900">Ricavi</p>
             <div className="space-y-3">
               {revenueAccounts.map((a) => (
                 <NumberField key={a.id} label={a.name} value={draft[a.id] ?? 0} onChange={(v) => setDraft((d) => ({ ...d, [a.id]: v }))} prefix="€" />
@@ -184,7 +184,7 @@ export function EconomicsPage() {
             </div>
           </div>
           <div>
-            <p className="mb-3 text-sm font-semibold text-slate-800">Costi variabili</p>
+            <p className="mb-3 text-sm font-semibold text-navy-900">Costi variabili</p>
             <div className="space-y-3">
               {variableAccounts.map((a) => (
                 <NumberField key={a.id} label={a.name} value={draft[a.id] ?? 0} onChange={(v) => setDraft((d) => ({ ...d, [a.id]: v }))} prefix="€" />
@@ -192,7 +192,7 @@ export function EconomicsPage() {
             </div>
           </div>
           <div>
-            <p className="mb-3 text-sm font-semibold text-slate-800">Costi fissi</p>
+            <p className="mb-3 text-sm font-semibold text-navy-900">Costi fissi</p>
             <div className="space-y-3">
               {fixedAccounts.map((a) => (
                 <NumberField key={a.id} label={a.name} value={draft[a.id] ?? 0} onChange={(v) => setDraft((d) => ({ ...d, [a.id]: v }))} prefix="€" />
@@ -201,19 +201,19 @@ export function EconomicsPage() {
           </div>
         </div>
 
-        <div className="mt-5 flex flex-wrap items-center gap-4 rounded-lg bg-slate-50 px-4 py-3 text-sm">
-          <span className="text-slate-500">
-            MDC anteprima: <span className="font-semibold text-slate-900">{formatEur(draftRevenue - draftVariable)}</span>
+        <div className="mt-5 flex flex-wrap items-center gap-4 rounded-card bg-stone-100 px-4 py-3 text-sm">
+          <span className="text-stone-500">
+            MDC anteprima: <span className="font-semibold text-navy-900">{formatEur(draftRevenue - draftVariable)}</span>
           </span>
-          <span className="text-slate-500">
-            MOL anteprima: <span className="font-semibold text-slate-900">{formatEur(draftRevenue - draftVariable - draftFixed)}</span>
+          <span className="text-stone-500">
+            MOL anteprima: <span className="font-semibold text-navy-900">{formatEur(draftRevenue - draftVariable - draftFixed)}</span>
           </span>
         </div>
 
         <button
           onClick={save}
           disabled={saveState === 'saving'}
-          className="mt-4 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:opacity-60"
+          className="mt-4 rounded-card bg-navy-700 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-navy-800-hover disabled:opacity-60"
         >
           {saveState === 'saving' ? 'Salvataggio…' : saveState === 'saved' ? 'Salvato ✓' : 'Salva trimestre'}
         </button>
@@ -224,7 +224,7 @@ export function EconomicsPage() {
         subtitle="Da usare quando il dettaglio trimestrale reale dell'anno precedente non è (ancora) nel sistema — sostituisce la colonna 'Totale AFP' dell'Excel"
       >
         {priorPl.length > 0 && (
-          <p className="mb-4 rounded-lg bg-emerald-50 px-3 py-2 text-xs text-emerald-700">
+          <p className="mb-4 rounded-card bg-success-100 px-3 py-2 text-xs text-success-600">
             Per il {year - 1} sono già presenti dati trimestrali reali: il confronto "vs anno precedente" li usa già,
             questo valore resta come riserva solo per gli anni senza dettaglio reale.
           </p>
@@ -235,7 +235,7 @@ export function EconomicsPage() {
           <button
             onClick={saveBaseline}
             disabled={baselineSaveState === 'saving'}
-            className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 disabled:opacity-60"
+            className="rounded-card border border-stone-300 bg-white px-4 py-2 text-sm font-medium text-navy-700 transition-colors hover:bg-navy-50 disabled:opacity-60"
           >
             {baselineSaveState === 'saving' ? 'Salvataggio…' : baselineSaveState === 'saved' ? 'Salvato ✓' : 'Salva valore AFP'}
           </button>
@@ -246,7 +246,7 @@ export function EconomicsPage() {
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead>
-              <tr className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500">
+              <tr className="border-b border-stone-300 text-xs uppercase tracking-wide text-stone-500">
                 <th className="py-2 pr-4">Trimestre</th>
                 <th className="py-2 pr-4 text-right">Ricavi</th>
                 <th className="py-2 pr-4 text-right">Costi variabili</th>
@@ -258,14 +258,14 @@ export function EconomicsPage() {
             </thead>
             <tbody>
               {view.table.map((row) => (
-                <tr key={row.label} className="border-b border-slate-100 last:border-0">
-                  <td className="py-1.5 pr-4 text-slate-700">{row.label}</td>
-                  <td className="py-1.5 pr-4 text-right text-slate-600">{formatEur(row.revenue)}</td>
-                  <td className="py-1.5 pr-4 text-right text-slate-600">{formatEur(row.variableCosts)}</td>
-                  <td className="py-1.5 pr-4 text-right text-slate-600">{formatEur(row.mdc)}</td>
-                  <td className="py-1.5 pr-4 text-right text-slate-600">{formatEur(row.fixedCosts)}</td>
-                  <td className="py-1.5 pr-4 text-right font-medium text-slate-900">{formatEur(row.mol)}</td>
-                  <td className="py-1.5 text-right text-slate-600">{formatPct(row.molPct)}</td>
+                <tr key={row.label} className="border-b border-stone-100 last:border-0">
+                  <td className="py-1.5 pr-4 text-navy-700">{row.label}</td>
+                  <td className="py-1.5 pr-4 text-right text-stone-600">{formatEur(row.revenue)}</td>
+                  <td className="py-1.5 pr-4 text-right text-stone-600">{formatEur(row.variableCosts)}</td>
+                  <td className="py-1.5 pr-4 text-right text-stone-600">{formatEur(row.mdc)}</td>
+                  <td className="py-1.5 pr-4 text-right text-stone-600">{formatEur(row.fixedCosts)}</td>
+                  <td className="py-1.5 pr-4 text-right font-medium text-navy-900">{formatEur(row.mol)}</td>
+                  <td className="py-1.5 text-right text-stone-600">{formatPct(row.molPct)}</td>
                 </tr>
               ))}
             </tbody>

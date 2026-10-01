@@ -22,9 +22,9 @@ const STATUS_OPTIONS: { value: CashflowStatus; label: string }[] = [
 ]
 
 const STATUS_BADGE: Record<CashflowStatus, string> = {
-  positivo: 'bg-emerald-50 text-emerald-700',
-  negativo: 'bg-rose-50 text-rose-700',
-  pareggio: 'bg-slate-100 text-slate-600',
+  positivo: 'bg-success-100 text-success-600',
+  negativo: 'bg-danger-100 text-danger-600',
+  pareggio: 'bg-stone-100 text-stone-600',
 }
 
 const EMPTY: CashflowMonthly = {
@@ -187,14 +187,14 @@ export function CashflowPage() {
         actions={<MonthSelect month={month} onChange={setMonth} />}
       >
         <div className="mb-4">
-          <span className="mb-1 block text-xs font-medium text-slate-600">Situazione cashflow</span>
+          <span className="mb-1 block text-xs font-medium text-stone-600">Situazione cashflow</span>
           <div className="flex gap-2">
             {STATUS_OPTIONS.map((opt) => (
               <button
                 key={opt.value}
                 onClick={() => setDraft((d) => ({ ...d, status: opt.value }))}
                 className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
-                  draft.status === opt.value ? STATUS_BADGE[opt.value] : 'bg-slate-50 text-slate-400 hover:bg-slate-100'
+                  draft.status === opt.value ? STATUS_BADGE[opt.value] : 'bg-stone-100 text-stone-500 hover:bg-navy-50'
                 }`}
               >
                 {opt.label}
@@ -214,7 +214,7 @@ export function CashflowPage() {
         <button
           onClick={save}
           disabled={saveState === 'saving'}
-          className="mt-4 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:opacity-60"
+          className="mt-4 rounded-card bg-navy-700 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-navy-800-hover disabled:opacity-60"
         >
           {saveState === 'saving' ? 'Salvataggio…' : saveState === 'saved' ? 'Salvato ✓' : 'Salva mese'}
         </button>
@@ -224,7 +224,7 @@ export function CashflowPage() {
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead>
-              <tr className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500">
+              <tr className="border-b border-stone-300 text-xs uppercase tracking-wide text-stone-500">
                 <th className="py-2 pr-4">Mese</th>
                 <th className="py-2 pr-4">Situazione</th>
                 <th className="py-2 pr-4 text-right">Incassi anticipati</th>
@@ -237,17 +237,17 @@ export function CashflowPage() {
             </thead>
             <tbody>
               {view.table.map((row) => (
-                <tr key={row.label} className="border-b border-slate-100 last:border-0">
-                  <td className="py-1.5 pr-4 text-slate-700">{row.label}</td>
+                <tr key={row.label} className="border-b border-stone-100 last:border-0">
+                  <td className="py-1.5 pr-4 text-navy-700">{row.label}</td>
                   <td className="py-1.5 pr-4">
                     {row.status && <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_BADGE[row.status]}`}>{row.status}</span>}
                   </td>
-                  <td className="py-1.5 pr-4 text-right font-medium text-slate-900">{formatEur(row.advance)}</td>
-                  <td className="py-1.5 pr-4 text-right text-slate-600">{formatPct(row.pct)}</td>
-                  <td className="py-1.5 pr-4 text-right text-slate-600">{formatPct(row.target)}</td>
-                  <td className="py-1.5 pr-4 text-right text-slate-600">{formatPct(row.deviation)}</td>
-                  <td className="py-1.5 pr-4 text-right text-slate-600">{formatEur(row.planned)}</td>
-                  <td className="py-1.5 text-right text-slate-600">{formatEur(row.overdue)}</td>
+                  <td className="py-1.5 pr-4 text-right font-medium text-navy-900">{formatEur(row.advance)}</td>
+                  <td className="py-1.5 pr-4 text-right text-stone-600">{formatPct(row.pct)}</td>
+                  <td className="py-1.5 pr-4 text-right text-stone-600">{formatPct(row.target)}</td>
+                  <td className="py-1.5 pr-4 text-right text-stone-600">{formatPct(row.deviation)}</td>
+                  <td className="py-1.5 pr-4 text-right text-stone-600">{formatEur(row.planned)}</td>
+                  <td className="py-1.5 text-right text-stone-600">{formatEur(row.overdue)}</td>
                 </tr>
               ))}
             </tbody>

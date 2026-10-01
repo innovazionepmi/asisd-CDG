@@ -1,4 +1,52 @@
+@import url("https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&family=Source+Serif+4:ital,wght@0,400;0,600;1,400;1,600&display=swap");
 @import "tailwindcss";
+
+/* Design system ASISD — token applicati dal file fornito da Emilio
+   (palette dal logo, tipografia Archivo/Source Serif 4, spaziature/raggi/
+   ombre). Qui mappati come utility Tailwind v4 via @theme: bg-navy-700,
+   text-stone-600, rounded-btn, shadow-card-md, font-sans, ecc. */
+@theme {
+  --color-navy-900: #0b1b33;
+  --color-navy-800: #062b5c;
+  --color-navy-700: #04448c;
+  --color-navy-800-hover: #033568;
+  --color-navy-300: #b9c7db;
+  --color-navy-100: #e6eef8;
+  --color-navy-50: #f2f6fb;
+
+  --color-amber-500: #f5a300;
+  --color-amber-600: #d98e00;
+  --color-amber-700: #b57400;
+  --color-amber-100: #fff3d6;
+
+  --color-paper: #f7f6f3;
+  --color-stone-100: #eeece7;
+  --color-stone-300: #d5d2ca;
+  --color-stone-500: #8a867c;
+  --color-stone-600: #5b5850;
+  --color-stone-900: #25221d;
+
+  --color-success-600: #17794a;
+  --color-success-100: #e3f3ea;
+  --color-warning-700: #9a5700;
+  --color-warning-100: #fff0d9;
+  --color-danger-600: #b42318;
+  --color-danger-100: #fbe7e5;
+  --color-info-700: #04448c;
+  --color-info-100: #e6eef8;
+
+  --font-sans: "Archivo", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-serif: "Source Serif 4", Georgia, serif;
+
+  --radius-badge: 4px;
+  --radius-btn: 6px;
+  --radius-card: 8px;
+  --radius-xl: 12px;
+
+  --shadow-card-sm: 0 1px 2px rgba(11, 27, 51, 0.08), 0 1px 1px rgba(11, 27, 51, 0.04);
+  --shadow-card-md: 0 6px 16px rgba(11, 27, 51, 0.1), 0 2px 4px rgba(11, 27, 51, 0.06);
+  --shadow-card-lg: 0 20px 40px rgba(11, 27, 51, 0.16), 0 4px 8px rgba(11, 27, 51, 0.06);
+}
 
 :root {
   color-scheme: light;
@@ -6,9 +54,15 @@
 
 body {
   margin: 0;
-  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  background-color: #f5f6f8;
-  color: #1a1d29;
+  font-family: var(--font-sans);
+  background-color: var(--color-paper);
+  color: var(--color-stone-900);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4 {
+  letter-spacing: -0.02em;
+  color: var(--color-navy-900);
 }
 
 table {

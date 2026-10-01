@@ -152,14 +152,14 @@ export function TrafficoPage() {
             <NumberField key={ch.id} label={ch.name} value={draft[ch.id] ?? 0} onChange={(v) => setDraft((d) => ({ ...d, [ch.id]: v }))} />
           ))}
         </div>
-        <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5 border-t border-slate-100 pt-4">
+        <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5 border-t border-stone-100 pt-4">
           <NumberField label="Obiettivo nuovi pazienti" value={draftTargetNewPatients} onChange={setDraftTargetNewPatients} />
           <NumberField label="Obiettivo riattivati" value={draftTargetReactivated} onChange={setDraftTargetReactivated} />
         </div>
         <button
           onClick={save}
           disabled={saveState === 'saving'}
-          className="mt-4 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:opacity-60"
+          className="mt-4 rounded-card bg-navy-700 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-navy-800-hover disabled:opacity-60"
         >
           {saveState === 'saving' ? 'Salvataggio…' : saveState === 'saved' ? 'Salvato ✓' : 'Salva mese'}
         </button>
@@ -169,7 +169,7 @@ export function TrafficoPage() {
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead>
-              <tr className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500">
+              <tr className="border-b border-stone-300 text-xs uppercase tracking-wide text-stone-500">
                 <th className="py-2 pr-4">Mese</th>
                 {channels.map((ch) => (
                   <th key={ch.id} className="py-2 pr-4 text-right">
@@ -183,16 +183,16 @@ export function TrafficoPage() {
             </thead>
             <tbody>
               {view.table.map((row) => (
-                <tr key={row.label} className="border-b border-slate-100 last:border-0">
-                  <td className="py-1.5 pr-4 text-slate-700">{row.label}</td>
+                <tr key={row.label} className="border-b border-stone-100 last:border-0">
+                  <td className="py-1.5 pr-4 text-navy-700">{row.label}</td>
                   {row.values.map((v, i) => (
-                    <td key={i} className="py-1.5 pr-4 text-right text-slate-600">
+                    <td key={i} className="py-1.5 pr-4 text-right text-stone-600">
                       {formatInt(v)}
                     </td>
                   ))}
-                  <td className="py-1.5 pr-4 text-right font-medium text-slate-900">{formatInt(row.total)}</td>
-                  <td className="py-1.5 pr-4 text-right text-slate-600">{formatInt(row.target)}</td>
-                  <td className="py-1.5 text-right text-slate-600">{formatInt(row.deviation)}</td>
+                  <td className="py-1.5 pr-4 text-right font-medium text-navy-900">{formatInt(row.total)}</td>
+                  <td className="py-1.5 pr-4 text-right text-stone-600">{formatInt(row.target)}</td>
+                  <td className="py-1.5 text-right text-stone-600">{formatInt(row.deviation)}</td>
                 </tr>
               ))}
             </tbody>

@@ -24,10 +24,10 @@ export function TrendLineChart({
   return (
     <ResponsiveContainer width="100%" height={height}>
       <LineChart data={data} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
-        <XAxis dataKey="label" tick={{ fontSize: 12, fill: '#64748b' }} axisLine={{ stroke: '#e2e8f0' }} tickLine={false} />
+        <CartesianGrid strokeDasharray="3 3" stroke="#d5d2ca" vertical={false} />
+        <XAxis dataKey="label" tick={{ fontSize: 12, fill: '#8a867c' }} axisLine={{ stroke: '#d5d2ca' }} tickLine={false} />
         <YAxis
-          tick={{ fontSize: 11, fill: '#64748b' }}
+          tick={{ fontSize: 11, fill: '#8a867c' }}
           axisLine={false}
           tickLine={false}
           width={unit === 'currency' ? 56 : 40}

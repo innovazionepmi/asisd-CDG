@@ -316,6 +316,40 @@ Con questo, **tutte e 5 le aree con dati mensili hanno gli obiettivi**
 non ne ha uno strutturato allo stesso modo (ha il confronto con AFP, un
 meccanismo diverso ma concettualmente analogo).
 
+## Design system ASISD applicato (stesso giorno, 2026-10-01)
+
+Emilio ha fornito un design system completo (zip con token, linee guida di
+brand e logo) prodotto per il sito/academy ASISD. Applicato alla parte
+riutilizzabile a livello di brand (colori, tipografia, spaziature/raggi/
+ombre, logo) a tutta l'app — escluso deliberatamente il resto del kit
+(componenti marketing tipo Hero/PriceBox/Testimonial, non pertinenti a una
+dashboard B2B).
+
+- `src/index.css`: token Tailwind v4 (`@theme`) con palette navy/amber/
+  stone + colori di stato (success/warning/danger/info), font Archivo
+  (titoli) + Source Serif 4 (enfasi), radii/ombre dedicati
+  (`rounded-card`, `rounded-badge`, `shadow-card-sm/md/lg`).
+- `src/lib/colors.ts`: palette grafici (10 colori) e mappatura semantica
+  (positive/negative/target/...) ricostruite sui soli colori di brand, per
+  restare a tema anche con 9 categorie nei donut chart.
+- Logo (`public/logo-asisd-transparent.png`/`-white.png`) applicato in
+  Sidebar e nelle pagine standalone (Login, Reset password, Admin
+  "Accesso negato") al posto della sola scritta testuale.
+- Tutte le pagine e i componenti condivisi (KpiCard, SectionCard,
+  PageHeader, Number/PercentField, PeriodSelect, DonutChart,
+  TrendLineChart, guardie di autenticazione) migrati dai colori Tailwind
+  generici (slate/blue/emerald/rose) ai token di brand — inclusi gli assi/
+  griglie dei grafici Recharts (prima colori hex hardcoded slate).
+- Creato `src/components/ui/Button.tsx` come componente di riferimento per
+  il futuro (varianti primary/secondary/ghost) — non ancora adottato nelle
+  pagine esistenti, che per ora restano con bottoni inline ricolorati
+  (scelta a basso rischio: sono già altamente consistenti tra loro).
+- Verificato: build di produzione pulita (`npm run build`, nessun errore
+  TS, solo il consueto avviso bundle >500KB), e verifica visiva nel
+  browser in modalità demo su Dashboard, Traffico, Preventivi,
+  Saturazione, Cashflow, Login, Admin — tutto coerente con la nuova
+  identità di brand, nessuna regressione funzionale.
+
 ## Prossimo passo
 
 1. **Su Supabase**: whitelistare i redirect URL per reset password/inviti
