@@ -122,6 +122,12 @@ const CASHFLOW_STATUS_2025: CashflowStatus[] = [
   'positivo', 'negativo', 'negativo', 'positivo', 'pareggio', 'pareggio',
 ]
 const OVERDUE_RECEIVABLES_2025 = [180000, 180000, 180000, 180000, 180000, 177206, 184000, 175000, 200000, 191000, 198000, 193000]
+// % Incassi Anticipati: valore inserito a mano (coerente con riga 8 dell'Excel).
+const ADVANCE_PAYMENTS_PCT_2025 = [
+  0.05392564091, 0.1036655555, 0.09394071164, 0.06677640774, 0.01406688618, 0.2641734874,
+  0.3356097674, 0.348454814, 0.3443612759, 0.421744484, 0.3007831604, 0.4476123542,
+]
+const ADVANCE_PAYMENTS_TARGET_2025 = [0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25]
 
 // Conto economico trimestrale: delta reali per trimestre (Co.Ge Trimestrale).
 const PL_QUARTERLY_2025: Record<string, number[]> = {
@@ -269,6 +275,7 @@ function buildYear(year: number, growthFactor: number): FixtureBundle {
       periodMonth: period,
       status: CASHFLOW_STATUS_2025[idx],
       advancePaymentsValue: advance,
+      advancePaymentsPct: ADVANCE_PAYMENTS_PCT_2025[idx],
       plannedReceivables: 12500,
       unplannedReceivables: 0,
       overdueReceivables: overdueReceivables[idx],
@@ -312,6 +319,7 @@ function buildTargets(year: number, growthFactor: number): KpiTarget[] {
   push('production.hygiene_sessions', grow(HYGIENE_TARGET_2025, growthFactor))
   push('production.titolare_share', TITOLARE_SHARE_TARGET_2025)
   push('production.saturation_pct', SATURATION_TARGET_2025)
+  push('cashflow.advance_payments_pct', ADVANCE_PAYMENTS_TARGET_2025)
   return targets
 }
 

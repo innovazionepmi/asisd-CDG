@@ -78,6 +78,7 @@ export interface CashflowMonthly {
   periodMonth: string
   status: CashflowStatus | null
   advancePaymentsValue: number
+  advancePaymentsPct: number
   plannedReceivables: number
   unplannedReceivables: number
   overdueReceivables: number

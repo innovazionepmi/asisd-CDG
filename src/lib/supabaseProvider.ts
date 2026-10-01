@@ -291,7 +291,7 @@ export const supabaseProvider: DataProvider = {
     const studioId = requireStudioId()
     const { data, error } = await db
       .from('cashflow_monthly')
-      .select('period_month, status, advance_payments_value, planned_receivables, unplanned_receivables, overdue_receivables, third_party_payer_receivables')
+      .select('period_month, status, advance_payments_value, advance_payments_pct, planned_receivables, unplanned_receivables, overdue_receivables, third_party_payer_receivables')
       .eq('studio_id', studioId)
       .gte('period_month', `${year}-01-01`)
       .lte('period_month', `${year}-12-01`)
@@ -301,6 +301,7 @@ export const supabaseProvider: DataProvider = {
         periodMonth: r.period_month,
         status: r.status as CashflowStatus | null,
         advancePaymentsValue: r.advance_payments_value,
+        advancePaymentsPct: r.advance_payments_pct,
         plannedReceivables: r.planned_receivables,
         unplannedReceivables: r.unplanned_receivables,
         overdueReceivables: r.overdue_receivables,
@@ -317,6 +318,7 @@ export const supabaseProvider: DataProvider = {
         period_month: row.periodMonth,
         status: row.status,
         advance_payments_value: row.advancePaymentsValue,
+        advance_payments_pct: row.advancePaymentsPct,
         planned_receivables: row.plannedReceivables,
         unplanned_receivables: row.unplannedReceivables,
         overdue_receivables: row.overdueReceivables,

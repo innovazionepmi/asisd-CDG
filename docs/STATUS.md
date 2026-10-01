@@ -274,17 +274,43 @@ Verificato in demo: toggle login/recupera password, routing diretto su
 path puliti (es. `/traffico` senza passare da `/`) funzionano. **Non
 ancora verificato il flusso email reale** (serve il passo Supabase sopra).
 
+## % Incassi anticipati configurabile (stesso giorno, 2026-10-01)
+
+Emilio ha testato il flusso titolare invitando un utente reale su uno
+studio di prova ("Studio Strappadenti") e ha notato che l'obiettivo del
+25% sul foglio CashFlow era modificabile mese per mese nell'Excel (12
+celle indipendenti, non un parametro unico) pur essendo stato lasciato
+piatto in quel file. Aggiunto di conseguenza:
+
+- `supabase/migrations/0008_advance_payments_pct.sql` — nuova colonna
+  `cashflow_monthly.advance_payments_pct` + chiave
+  `cashflow.advance_payments_pct` in `metric_catalog`.
+- **Scelta esplicita**: valore inserito a mano ogni mese (come la
+  Saturazione), non calcolato automaticamente. L'Excel lo calcolava come
+  incassi anticipati / "ricavi del periodo", ma quel ricavo mensile era un
+  dato tracciato solo in quel foglio e non esiste nel nostro schema (i
+  ricavi ufficiali sono trimestrali) — evitato un proxy implicito (es.
+  produzione mensile) su richiesta di Emilio.
+- `CashflowPage`: nuovo campo per il valore mensile + obiettivo, nuovo
+  grafico "% Incassi anticipati: attuale vs obiettivo" (linea attuale +
+  linea obiettivo tratteggiata, stesso pattern di Saturazione), colonne
+  Obiettivo/Scostamento in tabella.
+- Verificato in demo: i numeri tornano esatti con l'Excel (gennaio 5,4%
+  contro obiettivo 25%, scostamento -19,6%, ecc.).
+
 ## Prossimo passo
 
-1. **Su Supabase**: whitelistare i redirect URL (vedi sopra) — senza
-   questo, reset password e inviti nuovi non funzionano.
-2. Applicare `0007_saturation_and_targets.sql`, poi verificare Saturazione
-   e gli obiettivi di Traffico/Produzione con dati reali (non solo demo).
+1. **Su Supabase**: whitelistare i redirect URL per reset password/inviti
+   (vedi sopra) — senza questo i due flussi email non funzionano.
+2. Applicare `0007_saturation_and_targets.sql` e `0008_advance_payments_
+   pct.sql`, poi verificare Saturazione, Cashflow e gli obiettivi di
+   Traffico/Produzione con dati reali (non solo demo).
 3. Testare end-to-end: reset password di un utente esistente, e un nuovo
    invito titolare (per confermare che il fix del redirect funzioni anche
    lì, non solo nel flusso nuovo).
 4. Tutti i 6 macro-blocchi dell'Excel originale sono ora rappresentati
-   nell'app — buon punto per un giro di revisione complessiva con Andrea
+   nell'app, con obiettivi mensili su Traffico/Produzione/Saturazione/
+   Cashflow — buon punto per un giro di revisione complessiva con Andrea
    prima di nuove funzionalità.
 5. Pulizie rimaste in coda (non bloccanti): rimuovere le policy
    `TEMP_DEMO_anon_read_*`; studio-switcher reale se servirà a qualcuno con
