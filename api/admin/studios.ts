@@ -82,7 +82,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // già (email riusata su un altro studio), l'invito fallisce con
       // "already been registered": in quel caso recuperiamo l'utente
       // esistente e lo aggiungiamo comunque come owner del nuovo studio.
-      const invite = await admin.auth.admin.inviteUserByEmail(body.ownerEmail)
+      // redirectTo punta a /reset-password: stessa pagina usata per il
+      // "password dimenticata", riusata qui per impostare la prima password.
+      const origin = `https://${req.headers['x-forwarded-host'] ?? req.headers.host}`
+      const invite = await admin.auth.admin.inviteUserByEmail(body.ownerEmail, { redirectTo: `${origin}/reset-password` })
       let ownerId = invite.data.user?.id ?? null
       let inviteSent = !invite.error
 

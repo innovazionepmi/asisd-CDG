@@ -204,8 +204,14 @@ Costruito:
 ## Stato attuale / limiti noti
 
 - **Repo git**: `github.com/innovazionepmi/asisd-CDG`, branch `main`
-  (produzione, live e in uso) e `staging` (test prima del merge). Env vars
-  impostate su Vercel.
+  (produzione, live e in uso) e `staging`. Env vars impostate su Vercel.
+  **Workflow temporaneamente semplificato (deciso da Emilio il
+  2026-10-01)**: in questa fase di costruzione si pusha diretto su `main`,
+  saltando `staging` — si torna alla prassi normale (staging prima, merge
+  dopo conferma) quando l'app sarà più stabile/vicina a un uso reale.
+- **Dominio custom**: `https://asisd-pmos.innovazionepmi.it/` collegato su
+  Vercel (2026-10-01), probabile produzione definitiva al posto/accanto a
+  `asisd-cdg.vercel.app`.
 - Migrations applicate su Supabase: `0001` → `0006`. **`0007` scritta in
   questa sessione, non ancora applicata** — prossimo passo immediato.
 - Superadmin in `platform_admins`; almeno due studi nel sistema (Studio
@@ -228,20 +234,58 @@ Costruito:
   solo prima visita) vadano rilevati mese per mese o a trimestre come il
   conto economico (vedi `docs/data-model.md`, sezione assunzioni).
 
+## Password reset + fix router/email (stesso giorno, 2026-10-01)
+
+Aggiunta la funzione "password dimenticata" al login (`src/pages/
+ResetPasswordPage.tsx`, nuovi `requestPasswordReset`/`updatePassword` in
+`AuthContext`). Nel farlo, trovato un conflitto architetturale reale prima
+che diventasse un bug in produzione: l'app usava `HashRouter` (URL tipo
+`#/traffico`), ma Supabase usa **anche lui** il frammento `#` dell'URL per
+passare il token nei link via email (sia reset password sia l'invito
+titolare) — i due si sarebbero sovrascritti a vicenda.
+
+Fix: **passata a `BrowserRouter`** (URL puliti tipo `/traffico`), aggiunto
+`vercel.json` con rewrite SPA (`/(.*) → /index.html`, necessario perché
+Vercel sappia servire `index.html` su un refresh di `/traffico` invece di
+un 404 — gli `/api/*` non sono toccati, Vercel li risolve prima delle
+rewrite). Aggiornato anche `api/admin/studios.ts`: l'invito titolare ora
+usa esplicitamente `redirectTo` verso `/reset-password` (prima usava il
+default di Supabase, con lo stesso rischio).
+
+**Passo manuale obbligatorio, da fare prima del prossimo test**: su
+Supabase, Authentication → URL Configuration → Redirect URLs, aggiungere
+gli URL puliti — Supabase rifiuta/ignora un `redirectTo` non in whitelist,
+quindi finché non è fatto sia l'invito nuovo titolare sia il reset
+password falliscono silenziosamente (redirect al Site URL di default).
+Il codice non ha il dominio hardcoded (usa `window.location.origin` lato
+client e l'header `host` della richiesta lato server), quindi funziona su
+qualunque dominio sia whitelistato — vanno solo aggiunti tutti quelli
+realmente in uso:
+- `https://asisd-pmos.innovazionepmi.it/reset-password` — **dominio
+  custom collegato il 2026-10-01**, probabile produzione definitiva.
+- `https://asisd-cdg.vercel.app/reset-password` — dominio Vercel di
+  default, resta attivo in parallelo salvo redirect esplicito.
+- l'equivalente sull'URL di staging.
+
+Aggiornare anche il campo "Site URL" (sempre in URL Configuration) al
+dominio custom, visto che è quello definitivo.
+
+Verificato in demo: toggle login/recupera password, routing diretto su
+path puliti (es. `/traffico` senza passare da `/`) funzionano. **Non
+ancora verificato il flusso email reale** (serve il passo Supabase sopra).
+
 ## Prossimo passo
 
-1. Applicare `0007_saturation_and_targets.sql` sul progetto Supabase, poi
-   verificare la pagina Saturazione e gli obiettivi di Traffico/Produzione
-   con dati reali (non solo in demo).
-2. Tutti i 6 macro-blocchi dell'Excel originale sono ora rappresentati
-   nell'app (Traffico, Preventivi, Produzione, Saturazione, Economics,
-   Cashflow) — buon punto per fare un giro di revisione complessiva con
-   Andrea prima di proseguire con nuove funzionalità.
-3. Pulizie rimaste in coda (non bloccanti): rimuovere le policy
-   `TEMP_DEMO_anon_read_*`; valutare uno studio-switcher reale quando
-   servirà a qualcuno con più studi; risolvere l'assunzione aperta sui
-   preventivi "generali".
-
-Altre pulizie minori rimaste in coda (non bloccanti): rimuovere le policy
-`TEMP_DEMO_anon_read_*`, valutare se aggiungere uno studio-switcher reale
-quando servirà a qualcuno con più studi.
+1. **Su Supabase**: whitelistare i redirect URL (vedi sopra) — senza
+   questo, reset password e inviti nuovi non funzionano.
+2. Applicare `0007_saturation_and_targets.sql`, poi verificare Saturazione
+   e gli obiettivi di Traffico/Produzione con dati reali (non solo demo).
+3. Testare end-to-end: reset password di un utente esistente, e un nuovo
+   invito titolare (per confermare che il fix del redirect funzioni anche
+   lì, non solo nel flusso nuovo).
+4. Tutti i 6 macro-blocchi dell'Excel originale sono ora rappresentati
+   nell'app — buon punto per un giro di revisione complessiva con Andrea
+   prima di nuove funzionalità.
+5. Pulizie rimaste in coda (non bloccanti): rimuovere le policy
+   `TEMP_DEMO_anon_read_*`; studio-switcher reale se servirà a qualcuno con
+   più studi; assunzione aperta sui preventivi "generali".

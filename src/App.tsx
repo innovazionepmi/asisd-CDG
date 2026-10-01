@@ -1,4 +1,4 @@
-import { Route, HashRouter, Routes } from 'react-router-dom'
+import { BrowserRouter, Route, Routes } from 'react-router-dom'
 import { RequireSession } from './components/auth/RequireSession'
 import { RequireStudioSession } from './components/auth/RequireStudioSession'
 import { AppLayout } from './components/layout/AppLayout'
@@ -11,6 +11,7 @@ import { EconomicsPage } from './pages/EconomicsPage'
 import { LoginPage } from './pages/LoginPage'
 import { PreventiviPage } from './pages/PreventiviPage'
 import { ProduzionePage } from './pages/ProduzionePage'
+import { ResetPasswordPage } from './pages/ResetPasswordPage'
 import { SaturazionePage } from './pages/SaturazionePage'
 import { TrafficoPage } from './pages/TrafficoPage'
 
@@ -18,9 +19,10 @@ export default function App() {
   return (
     <AuthProvider>
       <StudioProvider>
-        <HashRouter>
+        <BrowserRouter>
           <Routes>
             <Route path="/login" element={<LoginPage />} />
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
             <Route
               path="/admin"
               element={
@@ -45,7 +47,7 @@ export default function App() {
               <Route path="/cashflow" element={<CashflowPage />} />
             </Route>
           </Routes>
-        </HashRouter>
+        </BrowserRouter>
       </StudioProvider>
     </AuthProvider>
   )
