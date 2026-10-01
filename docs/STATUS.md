@@ -298,20 +298,37 @@ piatto in quel file. Aggiunto di conseguenza:
 - Verificato in demo: i numeri tornano esatti con l'Excel (gennaio 5,4%
   contro obiettivo 25%, scostamento -19,6%, ecc.).
 
+## Obiettivo % chiusura su Preventivi (stesso giorno, 2026-10-01)
+
+Emilio ha chiesto una valutazione su quanto l'app fosse pronta per una
+prima demo ad Andrea Grassi. Risposta: sì, con la riserva che Preventivi
+era rimasta indietro rispetto alle altre 4 aree (nessun obiettivo
+mensile). Sistemato subito: `PreventiviPage` ora ha l'obiettivo mensile di
+"% Chiusura" (generale, somma dei due segmenti), grafico attuale vs
+obiettivo, colonne Obiettivo/Scostamento in tabella. **Nessuna nuova
+migration**: la chiave `quotes.close_rate` esisteva già in `metric_catalog`
+dalla migration 0004, mai usata finora. Verificato in demo con numeri
+reali dell'Excel (target 69-73% a seconda del trimestre, come da foglio
+Customer Experience riga 26).
+
+Con questo, **tutte e 5 le aree con dati mensili hanno gli obiettivi**
+(Traffico, Produzione, Saturazione, Cashflow, Preventivi) — solo Economics
+non ne ha uno strutturato allo stesso modo (ha il confronto con AFP, un
+meccanismo diverso ma concettualmente analogo).
+
 ## Prossimo passo
 
 1. **Su Supabase**: whitelistare i redirect URL per reset password/inviti
-   (vedi sopra) — senza questo i due flussi email non funzionano.
-2. Applicare `0007_saturation_and_targets.sql` e `0008_advance_payments_
-   pct.sql`, poi verificare Saturazione, Cashflow e gli obiettivi di
-   Traffico/Produzione con dati reali (non solo demo).
+   — senza questo i due flussi email non funzionano.
+2. Applicare le migration non ancora eseguite: `0007_saturation_and_
+   targets.sql`, `0008_advance_payments_pct.sql`. Verificare con dati
+   reali (non solo demo) tutte le aree con obiettivi.
 3. Testare end-to-end: reset password di un utente esistente, e un nuovo
-   invito titolare (per confermare che il fix del redirect funzioni anche
-   lì, non solo nel flusso nuovo).
-4. Tutti i 6 macro-blocchi dell'Excel originale sono ora rappresentati
-   nell'app, con obiettivi mensili su Traffico/Produzione/Saturazione/
-   Cashflow — buon punto per un giro di revisione complessiva con Andrea
-   prima di nuove funzionalità.
+   invito titolare.
+4. **Demo ad Andrea Grassi**: l'app è nello stato giusto per una prima
+   demo — vedi il ragionamento sopra. Preparare 2-3 domande aperte da
+   porre direttamente a lui (in particolare: preventivi "generali" mese
+   per mese o a trimestre?) invece di nasconderle.
 5. Pulizie rimaste in coda (non bloccanti): rimuovere le policy
    `TEMP_DEMO_anon_read_*`; studio-switcher reale se servirà a qualcuno con
-   più studi; assunzione aperta sui preventivi "generali".
+   più studi.

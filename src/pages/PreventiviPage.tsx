@@ -5,17 +5,20 @@ import { PageHeader } from '../components/layout/PageHeader'
 import { KpiCard } from '../components/ui/KpiCard'
 import { MonthSelect, YearSelect } from '../components/ui/PeriodSelect'
 import { NumberField } from '../components/ui/NumberField'
+import { PercentField } from '../components/ui/PercentField'
 import { SectionCard } from '../components/ui/SectionCard'
 import { deviationPct, formatEur, formatInt, formatPct, safeDiv, sum, trendOf } from '../lib/calc'
 import { allMonthsOfYear, monthKey, MONTH_LABELS_IT, MONTH_LABELS_SHORT_IT } from '../lib/periods'
 import { dataProvider } from '../lib/provider'
 import { DEFAULT_YEAR, SELECTABLE_YEARS } from '../lib/years'
-import type { PatientSegment, QuotesMonthly } from '../lib/types'
+import type { KpiTarget, PatientSegment, QuotesMonthly } from '../lib/types'
 
 const SEGMENTS: { id: PatientSegment; label: string }[] = [
   { id: 'new_patient', label: 'Nuovi pazienti' },
   { id: 'returning_patient', label: 'Pazienti esistenti' },
 ]
+
+const CLOSE_RATE_TARGET_KEY = 'quotes.close_rate'
 
 const EMPTY_DRAFT: QuotesMonthly = {
   periodMonth: '',
@@ -33,16 +36,23 @@ export function PreventiviPage() {
   const [month, setMonth] = useState(new Date().getMonth() + 1)
   const [quotes, setQuotes] = useState<QuotesMonthly[]>([])
   const [priorQuotes, setPriorQuotes] = useState<QuotesMonthly[]>([])
+  const [targets, setTargets] = useState<KpiTarget[]>([])
   const [draft, setDraft] = useState<Record<PatientSegment, QuotesMonthly>>({
     new_patient: EMPTY_DRAFT,
     returning_patient: EMPTY_DRAFT,
   })
+  const [draftTarget, setDraftTarget] = useState(0)
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved'>('idle')
 
   async function reload() {
-    const [q, pq] = await Promise.all([dataProvider.getQuotesMonthly(year), dataProvider.getQuotesMonthly(year - 1)])
+    const [q, pq, t] = await Promise.all([
+      dataProvider.getQuotesMonthly(year),
+      dataProvider.getQuotesMonthly(year - 1),
+      dataProvider.getKpiTargets(year),
+    ])
     setQuotes(q)
     setPriorQuotes(pq)
+    setTargets(t.filter((x) => x.metricKey === CLOSE_RATE_TARGET_KEY))
   }
 
   useEffect(() => {
@@ -58,12 +68,17 @@ export function PreventiviPage() {
       next[seg.id] = found ?? { ...EMPTY_DRAFT, periodMonth: period, patientSegment: seg.id }
     }
     setDraft(next)
+    setDraftTarget(targets.find((t) => t.periodStart === period)?.targetValue ?? 0)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [quotes, year, month])
+  }, [quotes, targets, year, month])
 
   async function save() {
     setSaveState('saving')
-    await Promise.all(SEGMENTS.map((seg) => dataProvider.upsertQuotesMonthly(draft[seg.id])))
+    const period = monthKey(year, month)
+    await Promise.all([
+      ...SEGMENTS.map((seg) => dataProvider.upsertQuotesMonthly(draft[seg.id])),
+      dataProvider.upsertKpiTarget({ periodStart: period, metricKey: CLOSE_RATE_TARGET_KEY, targetValue: draftTarget }),
+    ])
     await reload()
     setSaveState('saved')
     setTimeout(() => setSaveState('idle'), 1500)
@@ -76,10 +91,7 @@ export function PreventiviPage() {
     const issuedCount = sum(quotes.map((q) => q.issuedCount))
     const confirmedCount = sum(quotes.map((q) => q.confirmedCount))
     const closeRate = safeDiv(confirmedCount, issuedCount)
-
-    const priorIssuedCount = sum(priorQuotes.map((q) => q.issuedCount))
-    const priorConfirmedCount = sum(priorQuotes.map((q) => q.confirmedCount))
-    const closeRatePrior = safeDiv(priorConfirmedCount, priorIssuedCount)
+    const closeRateTarget = targets.length ? sum(targets.map((t) => t.targetValue)) / targets.length : null
 
     const avgConfirmedValue = safeDiv(confirmedValue, confirmedCount)
 
@@ -93,24 +105,35 @@ export function PreventiviPage() {
       const monthQuotes = quotes.filter((q) => q.periodMonth === period)
       const iCount = sum(monthQuotes.map((q) => q.issuedCount))
       const cCount = sum(monthQuotes.map((q) => q.confirmedCount))
-      return { label: MONTH_LABELS_SHORT_IT[i], chiusura: safeDiv(cCount, iCount) ?? 0 }
+      return {
+        label: MONTH_LABELS_SHORT_IT[i],
+        chiusura: safeDiv(cCount, iCount) ?? 0,
+        obiettivo: targets.find((t) => t.periodStart === period)?.targetValue ?? null,
+      }
     })
 
     const table = allMonthsOfYear(year).map((period, i) => {
       const monthQuotes = quotes.filter((q) => q.periodMonth === period)
+      const iCount = sum(monthQuotes.map((q) => q.issuedCount))
+      const cCount = sum(monthQuotes.map((q) => q.confirmedCount))
+      const rate = safeDiv(cCount, iCount)
+      const target = targets.find((t) => t.periodStart === period)?.targetValue ?? null
       return {
         label: MONTH_LABELS_IT[i],
-        issuedCount: sum(monthQuotes.map((q) => q.issuedCount)),
+        issuedCount: iCount,
         issuedValue: sum(monthQuotes.map((q) => q.issuedValue)),
-        confirmedCount: sum(monthQuotes.map((q) => q.confirmedCount)),
+        confirmedCount: cCount,
         confirmedValue: sum(monthQuotes.map((q) => q.confirmedValue)),
         lostCount: sum(monthQuotes.map((q) => q.lostCount)),
         lostValue: sum(monthQuotes.map((q) => q.lostValue)),
+        closeRate: rate,
+        target,
+        deviation: rate != null && target != null ? rate - target : null,
       }
     })
 
-    return { issuedValue, confirmedValue, closeRate, closeRatePrior, avgConfirmedValue, breakdown, trend, table }
-  }, [quotes, priorQuotes, year])
+    return { issuedValue, confirmedValue, closeRate, closeRateTarget, avgConfirmedValue, breakdown, trend, table }
+  }, [quotes, priorQuotes, targets, year])
 
   function updateDraft(seg: PatientSegment, field: keyof QuotesMonthly, value: number) {
     setDraft((d) => ({ ...d, [seg]: { ...d[seg], [field]: value } }))
@@ -130,9 +153,9 @@ export function PreventiviPage() {
         <KpiCard
           label="% Chiusura"
           value={formatPct(view.closeRate)}
-          deviation={deviationPct(view.closeRate, view.closeRatePrior)}
-          trend={trendOf(deviationPct(view.closeRate, view.closeRatePrior))}
-          deviationLabel="vs anno prec."
+          deviation={deviationPct(view.closeRate, view.closeRateTarget)}
+          trend={trendOf(deviationPct(view.closeRate, view.closeRateTarget))}
+          deviationLabel="vs obiettivo"
         />
         <KpiCard label="€ Medio confermato" value={formatEur(view.avgConfirmedValue)} />
       </div>
@@ -141,14 +164,21 @@ export function PreventiviPage() {
         <SectionCard title="Esito preventivi emessi" subtitle={`Anno ${year}, valore in €`}>
           <DonutChart data={view.breakdown} unit="currency" />
         </SectionCard>
-        <SectionCard title="Trend % di chiusura">
-          <TrendLineChart data={view.trend} series={[{ key: 'chiusura', label: '% chiusura' }]} unit="percent" />
+        <SectionCard title="Trend % di chiusura: attuale vs obiettivo">
+          <TrendLineChart
+            data={view.trend}
+            series={[
+              { key: 'chiusura', label: '% chiusura' },
+              { key: 'obiettivo', label: 'Obiettivo', dashed: true },
+            ]}
+            unit="percent"
+          />
         </SectionCard>
       </div>
 
       <SectionCard
         title="Inserimento dati mensile"
-        subtitle="Seleziona il mese e aggiorna emessi / confermati / persi per segmento"
+        subtitle="Seleziona il mese e aggiorna emessi / confermati / persi per segmento, e l'obiettivo di chiusura"
         actions={<MonthSelect month={month} onChange={setMonth} />}
       >
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
@@ -165,6 +195,9 @@ export function PreventiviPage() {
               </div>
             </div>
           ))}
+        </div>
+        <div className="mt-4 max-w-xs border-t border-slate-100 pt-4">
+          <PercentField label="Obiettivo % chiusura (generale)" value={draftTarget} onChange={setDraftTarget} />
         </div>
         <button
           onClick={save}
@@ -186,7 +219,10 @@ export function PreventiviPage() {
                 <th className="py-2 pr-4 text-right">Nr. confermati</th>
                 <th className="py-2 pr-4 text-right">€ confermati</th>
                 <th className="py-2 pr-4 text-right">Nr. persi</th>
-                <th className="py-2 text-right">€ persi</th>
+                <th className="py-2 pr-4 text-right">€ persi</th>
+                <th className="py-2 pr-4 text-right">% Chiusura</th>
+                <th className="py-2 pr-4 text-right">Obiettivo</th>
+                <th className="py-2 text-right">Scostamento</th>
               </tr>
             </thead>
             <tbody>
@@ -198,7 +234,10 @@ export function PreventiviPage() {
                   <td className="py-1.5 pr-4 text-right text-slate-600">{formatInt(row.confirmedCount)}</td>
                   <td className="py-1.5 pr-4 text-right font-medium text-slate-900">{formatEur(row.confirmedValue)}</td>
                   <td className="py-1.5 pr-4 text-right text-slate-600">{formatInt(row.lostCount)}</td>
-                  <td className="py-1.5 text-right text-slate-600">{formatEur(row.lostValue)}</td>
+                  <td className="py-1.5 pr-4 text-right text-slate-600">{formatEur(row.lostValue)}</td>
+                  <td className="py-1.5 pr-4 text-right text-slate-600">{formatPct(row.closeRate)}</td>
+                  <td className="py-1.5 pr-4 text-right text-slate-600">{formatPct(row.target)}</td>
+                  <td className="py-1.5 text-right text-slate-600">{formatPct(row.deviation)}</td>
                 </tr>
               ))}
             </tbody>

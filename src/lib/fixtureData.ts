@@ -128,6 +128,8 @@ const ADVANCE_PAYMENTS_PCT_2025 = [
   0.3356097674, 0.348454814, 0.3443612759, 0.421744484, 0.3007831604, 0.4476123542,
 ]
 const ADVANCE_PAYMENTS_TARGET_2025 = [0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25]
+// % Chiusura preventivi generale (Customer Experience, riga 26).
+const CLOSE_RATE_TARGET_2025 = [0.69, 0.69, 0.69, 0.71, 0.71, 0.71, 0.73, 0.73, 0.73, 0.73, 0.73, 0.73]
 
 // Conto economico trimestrale: delta reali per trimestre (Co.Ge Trimestrale).
 const PL_QUARTERLY_2025: Record<string, number[]> = {
@@ -320,6 +322,7 @@ function buildTargets(year: number, growthFactor: number): KpiTarget[] {
   push('production.titolare_share', TITOLARE_SHARE_TARGET_2025)
   push('production.saturation_pct', SATURATION_TARGET_2025)
   push('cashflow.advance_payments_pct', ADVANCE_PAYMENTS_TARGET_2025)
+  push('quotes.close_rate', CLOSE_RATE_TARGET_2025)
   return targets
 }
 
