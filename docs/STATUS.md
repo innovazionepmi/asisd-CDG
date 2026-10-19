@@ -406,6 +406,43 @@ formule incluse, prima di scrivere codice).
   (`2abe09f6-...`) consegnato a parte, non committato (stessa prassi dei
   seed demo).
 
+## Saturazione ribaltata sul tab "Saturazione" dell'Excel (2026-10-19, branch staging)
+
+Stesso metodo di Economics: rilettura del foglio con le formule, poi
+replica. Il tab "Lunedì della Saturazione" riunisce 7 KPI mensili che
+nell'app stavano su tre pagine (Traffico, Produzione, Saturazione): ora la
+pagina Saturazione mostra la tabella completa (`src/lib/saturationSheet.ts`
++ `src/components/saturation/SaturationSheetTable.tsx`), con mesi nelle
+colonne + colonna "Anno" (TOTALE) e, per ogni KPI, tre righe: valore,
+obiettivo, scostamento su obiettivo. KPI: prime visite nuovi pazienti,
+riattivati, % saturazione, produzione eseguita, produzione titolare, %
+produzione titolare, sedute di igiene. Sostituisce la vecchia "Dati
+completi" della pagina; l'inserimento dati resta dov'era (visite in
+Traffico, produzione/igiene in Produzione, saturazione in Saturazione) e la
+tabella è di sola lettura che li riunisce.
+
+Logica replicata dall'Excel (verificata sui totali del foglio):
+- TOTALE valore = somma dei mesi (conteggi e valuta) o **media dei mesi con
+  dato** (percentuali); TOTALE obiettivo = somma/media dei 12 obiettivi.
+- Scostamento mensile = valore - obiettivo solo se il mese ha un dato
+  (`IF(valore>0, ..., "-")`): un mese a zero o non inserito resta "—" (anche
+  un 0 reale, es. riattivati di giugno nella demo, come nell'Excel).
+- TOTALE scostamento = somma degli scostamenti mensili; per le percentuali
+  media dei valori meno media degli obiettivi **degli stessi mesi**. Su un
+  anno completo coincide con l'Excel (che per le % fa media-meno-media su
+  12 mesi); su un anno in corso evita di confrontare i mesi inseriti con un
+  obiettivo di anno intero (scelta nostra, unica deviazione dall'Excel).
+- **Obiettivo produzione titolare derivato** = obiettivo produzione x
+  obiettivo % titolare (come `C16*C23` dell'Excel); se manca uno dei due si
+  usa il valore inserito a mano (`production.titolare`). Il campo manuale
+  nella pagina Produzione resta, ma qui prevale la derivazione.
+- % produzione titolare del TOTALE = media delle % mensili (come l'Excel),
+  non rapporto dei totali: può differire di poco dalla card della pagina
+  Produzione (rapporto dei totali).
+- Righe del titolare: scostamento in neutro (né verde né rosso) perché non è
+  ovvio se superare l'obiettivo sia meglio — **domanda aperta per Andrea**
+  (l'obiettivo di quota del titolare scende nell'anno: delega crescente?).
+
 ## Prossimo passo
 
 1. **Su Supabase**: whitelistare i redirect URL per reset password/inviti
