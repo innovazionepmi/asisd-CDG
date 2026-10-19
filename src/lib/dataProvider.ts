@@ -4,6 +4,8 @@ import type {
   HygieneSessionsMonthly,
   KpiPriorYearBaseline,
   KpiTarget,
+  ManualColKey,
+  ManualValue,
   PlAccount,
   PlPriorYearBaseline,
   PlQuarterly,
@@ -48,6 +50,11 @@ export interface DataProvider {
 
   getCashflowMonthly(year: number): Promise<CashflowMonthly[]>
   upsertCashflowMonthly(row: CashflowMonthly): Promise<void>
+
+// Nodo "Inserimento dati": AFP, budget annuo e valori trimestrali/annuali senza fonte mensile.
+  getManualValues(year: number): Promise<ManualValue[]>
+  upsertManualValue(row: ManualValue): Promise<void>
+  deleteManualValue(year: number, rowKey: string, colKey: ManualColKey): Promise<void>
 
   getPlPriorYearBaseline(year: number): Promise<PlPriorYearBaseline[]>
   upsertPlPriorYearBaseline(row: PlPriorYearBaseline): Promise<void>

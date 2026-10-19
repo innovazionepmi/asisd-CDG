@@ -8,6 +8,8 @@ import type {
   HygieneSessionsMonthly,
   KpiPriorYearBaseline,
   KpiTarget,
+  ManualColKey,
+  ManualValue,
   PlAccount,
   PlAccountType,
   PlPriorYearBaseline,
@@ -327,6 +329,31 @@ export const supabaseProvider: DataProvider = {
       },
       { onConflict: 'studio_id,period_month' },
     )
+    if (error) throw error
+  },
+
+  async getManualValues(year) {
+    const db = requireClient()
+    const studioId = requireStudioId()
+    const { data, error } = await db.from('manual_values').select('fiscal_year, row_key, col_key, value').eq('studio_id', studioId).eq('fiscal_year', year)
+    if (error) throw error
+    return (data ?? []).map(
+      (r): ManualValue => ({ fiscalYear: r.fiscal_year, rowKey: r.row_key, colKey: r.col_key as ManualColKey, value: Number(r.value) }),
+    )
+  },
+  async upsertManualValue(row) {
+    const db = requireClient()
+    const studioId = requireStudioId()
+    const { error } = await db.from('manual_values').upsert(
+      { studio_id: studioId, fiscal_year: row.fiscalYear, row_key: row.rowKey, col_key: row.colKey, value: row.value, updated_at: new Date().toISOString() },
+      { onConflict: 'studio_id,fiscal_year,row_key,col_key' },
+    )
+    if (error) throw error
+  },
+  async deleteManualValue(year, rowKey, colKey) {
+    const db = requireClient()
+    const studioId = requireStudioId()
+    const { error } = await db.from('manual_values').delete().eq('studio_id', studioId).eq('fiscal_year', year).eq('row_key', rowKey).eq('col_key', colKey)
     if (error) throw error
   },
 

@@ -352,3 +352,5 @@ function buildTargets(year: number, growthFactor: number): KpiTarget[] {
 }
 
 export const KPI_TARGETS: KpiTarget[] = [...buildTargets(2025, 1), ...buildTargets(2026, 1.09)]
+
+export { MANUAL_VALUES } from './fixtureManualValues'

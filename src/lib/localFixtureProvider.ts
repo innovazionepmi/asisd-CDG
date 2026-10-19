@@ -1,6 +1,7 @@
 import type { DataProvider } from './dataProvider'
 import {
   CHANNELS,
+  MANUAL_VALUES,
   FIXTURES_BY_YEAR,
   KPI_PRIOR_YEAR_BASELINE,
   KPI_TARGETS,
@@ -15,6 +16,8 @@ import type {
   HygieneSessionsMonthly,
   KpiPriorYearBaseline,
   KpiTarget,
+  ManualColKey,
+  ManualValue,
   PlPriorYearBaseline,
   PlQuarterly,
   ProductionMonthly,
@@ -69,6 +72,7 @@ let plQuarterly: PlQuarterly[] | null = null
 let cashflowMonthly: CashflowMonthly[] | null = null
 let kpiPriorYearBaseline: KpiPriorYearBaseline[] | null = null
 let plPriorYearBaseline: PlPriorYearBaseline[] | null = null
+let manualValues: ManualValue[] | null = null
 let saturationMonthly: SaturationMonthly[] | null = null
 let kpiTargets: KpiTarget[] | null = null
 
@@ -176,6 +180,21 @@ export const localFixtureProvider: DataProvider = {
     cashflowMonthly ??= loadTable('cashflowMonthly', seedFor((b) => b.cashflowMonthly))
     cashflowMonthly = upsertBy(cashflowMonthly, row, (r) => r.periodMonth === row.periodMonth)
     saveTable('cashflowMonthly', cashflowMonthly)
+  },
+
+  async getManualValues(year) {
+    manualValues ??= loadTable('manualValues', MANUAL_VALUES)
+    return manualValues.filter((v) => v.fiscalYear === year)
+  },
+  async upsertManualValue(row) {
+    manualValues ??= loadTable('manualValues', MANUAL_VALUES)
+    manualValues = upsertBy(manualValues, row, (r) => r.fiscalYear === row.fiscalYear && r.rowKey === row.rowKey && r.colKey === row.colKey)
+    saveTable('manualValues', manualValues)
+  },
+  async deleteManualValue(year: number, rowKey: string, colKey: ManualColKey) {
+    manualValues ??= loadTable('manualValues', MANUAL_VALUES)
+    manualValues = manualValues.filter((r) => !(r.fiscalYear === year && r.rowKey === rowKey && r.colKey === colKey))
+    saveTable('manualValues', manualValues)
   },
 
   async getPlPriorYearBaseline(year) {

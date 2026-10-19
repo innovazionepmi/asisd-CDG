@@ -9,6 +9,7 @@ import { AnalyticDashboardPage } from './pages/AnalyticDashboardPage'
 import { CashflowPage } from './pages/CashflowPage'
 import { DashboardPage } from './pages/DashboardPage'
 import { EconomicsPage } from './pages/EconomicsPage'
+import { InserimentoDatiPage } from './pages/InserimentoDatiPage'
 import { LoginPage } from './pages/LoginPage'
 import { PreventiviPage } from './pages/PreventiviPage'
 import { ProduzionePage } from './pages/ProduzionePage'
@@ -47,6 +48,7 @@ export default function App() {
               <Route path="/saturazione" element={<SaturazionePage />} />
               <Route path="/economics" element={<EconomicsPage />} />
               <Route path="/cashflow" element={<CashflowPage />} />
+              <Route path="/inserimento-dati" element={<InserimentoDatiPage />} />
             </Route>
           </Routes>
         </BrowserRouter>

@@ -85,6 +85,16 @@ export interface CashflowMonthly {
   thirdPartyPayerReceivables: number
 }
 
+export type ManualColKey = 'afp' | 'budget' | 'q1' | 'q2' | 'q3' | 'q4' | 'year'
+
+/** Valore del nodo "Inserimento dati" (celle gialle del foglio Aggregato Trimestrale). */
+export interface ManualValue {
+  fiscalYear: number
+  rowKey: string
+  colKey: ManualColKey
+  value: number
+}
+
 export interface PlPriorYearBaseline {
   fiscalYear: number
   accountId: string

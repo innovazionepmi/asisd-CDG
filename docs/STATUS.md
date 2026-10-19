@@ -499,6 +499,42 @@ sono rese "non applicabili" (righe grigie); "—" = dato non disponibile.
   colonna con un click, colori col verso giusto (verde meglio / rosso peggio /
   grigio nessun giudizio).
 
+## Nodo "Inserimento dati" — Fase 1 (2026-10-19, branch staging)
+
+Decisioni di Emilio: C.A.C. e V.M.P. **trimestrali** come nel foglio; il CFMP e' un
+dato dell'**anno precedente** da inserire a mano; inserisce **solo il titolare** di
+studio (per ora). Preventivi "in corso": calcolati, non digitati (proposta non
+contestata). Pagina `/inserimento-dati` (voce di menu visibile solo al titolare; in
+demo sempre), schede: Riferimenti (AFP e budget), Traffico, Preventivi, Produzione,
+Cashflow, Parametri studio. I campi si salvano all'uscita dalla casella; casella
+vuota = elimina; i valori compaiono subito nella Dashboard analitica.
+
+- **Migration `0010_manual_values.sql` (da applicare su Supabase)**: tabella
+  generica `manual_values` (anno, row_key, col_key afp/budget/q1-q4/year, valore),
+  lettura per i membri, inserimento/modifica/cancellazione **solo per role = owner**.
+  Scelta rispetto a quanto proposto in chat: una sola tabella invece di aggiungere
+  `dimension_id` a kpi_targets/kpi_prior_year_baseline (vincoli di unicita' con NULL,
+  nuovo valore di enum per la cadenza annuale): stesso risultato per l'utente, meno
+  rischio sulle tabelle esistenti.
+- **Cosa si inserisce**: AFP (totale annuo) e budget (totale annuo) per ogni KPI
+  della dashboard dove manca il dato reale o l'obiettivo mensile (la casella e'
+  bloccata, con l'origine, quando il valore arriva da dati reali dell'anno
+  precedente o da obiettivi mensili); budget annuo di Ricavi e MOL; nuclei
+  familiari, C.A.C., V.M.P., valore atteso dai preventivi in corso e produzione da
+  eseguire (trimestrali); portafogli di inizio anno di preventivi (numero e €, totale
+  e prima visita), produzione e crediti (annuali); CFMP dell'anno precedente.
+- **Priorita' nella dashboard**: AFP = dati reali anno precedente > valore manuale >
+  derivato (somma figli / rapporto); budget = obiettivi mensili > budget manuale >
+  derivato; valori delle righe senza fonte mensile = valori trimestrali del nodo.
+- **Righe ora calcolate**: preventivi in corso (numero e €, totale e prima visita) =
+  portafoglio di inizio anno + emessi - confermati - persi, con i segni corretti
+  (nell'Excel la riga "in corso prima visita" ha i segni invertiti); C.A.C./V.M.P.
+  (calcolo e stato OK / NON OK) col margine (MDC%) dello stesso periodo; CFMP/
+  saturazione = CFMP / % saturazione (budget dal target di studio_configs).
+- **Fase 2 (da fare)**: spostare nel nodo anche gli inserimenti gia' esistenti (visite,
+  preventivi, produzione, cashflow, economics) e rendere le pagine di sola lettura.
+  Gli inserimenti dell'anno 2025 del foglio Excel sono nei dati demo locali.
+
 ## Prossimo passo
 
 1. **Su Supabase**: whitelistare i redirect URL per reset password/inviti

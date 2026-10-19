@@ -22,6 +22,7 @@ const GROUP_LABELS: { group: ColGroup[]; label: string }[] = [
 ]
 
 function formatCell(cell: SheetCell): string {
+  if (cell.fmt === 'text') return cell.text ?? '—'
   const v = cell.value
   if (v == null) return '—'
   if (cell.dev === 'pp') return `${signedDecimal.format(v * 100)}%`
@@ -48,6 +49,13 @@ function Cell({ row, cell, index, focused }: { row: SheetRow; cell: SheetCell; i
     return <td key={index} className={clsx(base, 'bg-stone-200/70 bg-[repeating-linear-gradient(135deg,transparent,transparent_4px,rgba(138,134,124,0.12)_4px,rgba(138,134,124,0.12)_8px)]')} aria-label="non applicabile" />
   }
   if (cell.kind === 'blank') return <td className={clsx(base, row.emphasis ? 'bg-navy-50' : 'bg-white')} />
+  if (cell.fmt === 'text') {
+    return (
+      <td className={clsx(base, row.emphasis ? 'bg-navy-50' : 'bg-white', focused && 'bg-amber-100/60')}>
+        <span className={clsx('font-bold', cell.text === 'OK' ? 'text-success-600' : cell.text ? 'text-danger-600' : 'text-stone-300')}>{formatCell(cell)}</span>
+      </td>
+    )
+  }
   return (
     <td className={clsx(base, row.emphasis ? 'bg-navy-50' : 'bg-white', focused && 'bg-amber-100/60')}>
       {cell.dev ? (

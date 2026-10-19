@@ -1,11 +1,13 @@
 import clsx from 'clsx'
-import { Armchair, BarChart3, ClipboardList, Euro, LayoutDashboard, LogOut, ShieldCheck, Stethoscope, TableProperties, Users, X } from 'lucide-react'
+import { Armchair, BarChart3, ClipboardList, Euro, LayoutDashboard, LogOut, ShieldCheck, SquarePen, Stethoscope, TableProperties, Users, X, type LucideIcon } from 'lucide-react'
 import { NavLink } from 'react-router-dom'
 import { useAuth } from '../../lib/auth/AuthContext'
 import { useStudio } from '../../lib/studio/StudioContext'
 import { isSupabaseConfigured } from '../../lib/supabaseClient'
 
-const NAV_ITEMS = [
+type NavItem = { to: string; label: string; icon: LucideIcon; end?: boolean }
+
+const NAV_ITEMS: NavItem[] = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard, end: true },
   { to: '/dashboard-analitica', label: 'Dashboard analitica', icon: TableProperties },
   { to: '/traffico', label: 'Traffico', icon: Users },
@@ -16,9 +18,13 @@ const NAV_ITEMS = [
   { to: '/cashflow', label: 'Cashflow', icon: Euro },
 ]
 
+// Nodo di inserimento dati: riservato al titolare di studio (in demo e visibile)
+const ENTRY_ITEM: NavItem = { to: '/inserimento-dati', label: 'Inserimento dati', icon: SquarePen }
+
 export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { session, signOut } = useAuth()
   const studio = useStudio()
+  const navItems = !isSupabaseConfigured || studio.role === 'owner' ? [...NAV_ITEMS, ENTRY_ITEM] : NAV_ITEMS
 
   return (
     <>
@@ -39,7 +45,7 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
           </button>
         </div>
         <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
-          {NAV_ITEMS.map((item) => (
+          {navItems.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
