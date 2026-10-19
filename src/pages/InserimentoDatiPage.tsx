@@ -69,7 +69,8 @@ const BUDGETS: Record<Exclude<TabId, 'refs' | 'parametri'>, BudgetLine[]> = {
     { metricKey: 'quotes.confirmed_value', label: 'Preventivi confermati (€)', format: 'currency', annual: 'sum' },
     { metricKey: 'quotes.issued_value_pv', label: 'Preventivi emessi prima visita (€)', format: 'currency', annual: 'sum' },
     { metricKey: 'quotes.confirmed_value_pv', label: 'Preventivi confermati prima visita (€)', format: 'currency', annual: 'sum' },
-    { metricKey: 'quotes.close_rate', label: '% di chiusura', format: 'percent', annual: 'avg' },
+    { metricKey: 'quotes.close_rate', label: '% di chiusura (generale)', format: 'percent', annual: 'avg' },
+    { metricKey: 'quotes.close_rate_pv', label: '% di chiusura prima visita', format: 'percent', annual: 'avg' },
   ],
   produzione: [
     { metricKey: 'production.total', label: 'Produzione totale (€)', format: 'currency', annual: 'sum' },

@@ -543,6 +543,28 @@ decimali) per le righe CFMP e CFMP/saturazione della dashboard e per i campi "CF
 precedente" e "Target CFMP/saturazione" del nodo. I valori salvati non cambiano (0,7858
 era gia' un importo); il calcolo CFMP / % saturazione e' invariato.
 
+### "Dati completi" a mesi nelle colonne (2026-10-19)
+
+Nelle pagine Traffico, Produzione, Preventivi e Cashflow la tabella "Dati completi" e'
+ribaltata come i fogli Excel (mesi nelle colonne, colonna Anno, per ogni KPI valore +
+obiettivo + scostamento); riusa il componente `SaturationSheetTable` (esteso con righe
+di solo valore, riga di stato e note personalizzabili) e i costruttori di
+`src/lib/monthlySheets.ts`:
+- **Traffico / Produzione**: righe del foglio "Saturazione" (nuovi pazienti, riattivati;
+  produzione, titolare, % titolare, igiene) piu' il dettaglio per canale / tipologia
+  senza obiettivo.
+- **Preventivi** (foglio "Customer Experience"): prima i soli nuovi pazienti (numero e
+  valore emessi e confermati, valori medi, % di chiusura), poi % di chiusura generale,
+  emessi/confermati generali con obiettivo e persi senza obiettivo. Obiettivi: emessi
+  nuovi = obiettivo nuovi pazienti; confermati nuovi = emessi x % chiusura obiettivo
+  (nuova chiave mensile `quotes.close_rate_pv`, in migration 0012 e nella griglia del
+  nodo; prima era solo un budget annuo); valori dai budget mensili; valori medi dal
+  budget annuo manuale. Valori medi e % di chiusura: totale Anno = rapporto dei totali.
+- **Cashflow** (foglio "CashFlow"): situazione del mese, incassi anticipati, % incassi,
+  crediti scaduti (media), ricavi del periodo (solo obiettivo mensile: i ricavi effettivi
+  si leggono a trimestre in Economics), piu' crediti pianificati / non pianificati /
+  terzo pagante senza obiettivo.
+
 ### Budget mensili nel nodo (2026-10-19)
 
 Come nel foglio Excel (Saturazione, Customer Experience, CashFlow) **i budget si

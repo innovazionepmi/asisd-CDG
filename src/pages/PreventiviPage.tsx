@@ -7,11 +7,13 @@ import { MonthSelect, YearSelect } from '../components/ui/PeriodSelect'
 import { NumberField } from '../components/ui/NumberField'
 import { PercentField } from '../components/ui/PercentField'
 import { SectionCard } from '../components/ui/SectionCard'
-import { deviationPct, formatEur, formatInt, formatPct, safeDiv, sum, trendOf } from '../lib/calc'
-import { allMonthsOfYear, monthKey, MONTH_LABELS_IT, MONTH_LABELS_SHORT_IT } from '../lib/periods'
+import { SaturationSheetTable } from '../components/saturation/SaturationSheetTable'
+import { deviationPct, formatEur, formatPct, safeDiv, sum, trendOf } from '../lib/calc'
+import { quotesBlocks } from '../lib/monthlySheets'
+import { allMonthsOfYear, monthKey, MONTH_LABELS_SHORT_IT } from '../lib/periods'
 import { dataProvider } from '../lib/provider'
 import { DEFAULT_YEAR, SELECTABLE_YEARS } from '../lib/years'
-import type { KpiTarget, PatientSegment, QuotesMonthly } from '../lib/types'
+import type { KpiTarget, ManualValue, PatientSegment, QuotesMonthly } from '../lib/types'
 
 const SEGMENTS: { id: PatientSegment; label: string }[] = [
   { id: 'new_patient', label: 'Nuovi pazienti' },
@@ -37,6 +39,8 @@ export function PreventiviPage() {
   const [quotes, setQuotes] = useState<QuotesMonthly[]>([])
   const [priorQuotes, setPriorQuotes] = useState<QuotesMonthly[]>([])
   const [targets, setTargets] = useState<KpiTarget[]>([])
+  const [allTargets, setAllTargets] = useState<KpiTarget[]>([])
+  const [manual, setManual] = useState<ManualValue[]>([])
   const [draft, setDraft] = useState<Record<PatientSegment, QuotesMonthly>>({
     new_patient: EMPTY_DRAFT,
     returning_patient: EMPTY_DRAFT,
@@ -45,13 +49,17 @@ export function PreventiviPage() {
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved'>('idle')
 
   async function reload() {
-    const [q, pq, t] = await Promise.all([
+    const [q, pq, t, man] = await Promise.all([
       dataProvider.getQuotesMonthly(year),
       dataProvider.getQuotesMonthly(year - 1),
       dataProvider.getKpiTargets(year),
+      // se la migration 0010 non e' applicata la tabella resta utilizzabile (senza obiettivi dei valori medi)
+      dataProvider.getManualValues(year).catch(() => [] as ManualValue[]),
     ])
+    setManual(man)
     setQuotes(q)
     setPriorQuotes(pq)
+    setAllTargets(t)
     setTargets(t.filter((x) => x.metricKey === CLOSE_RATE_TARGET_KEY))
   }
 
@@ -112,32 +120,14 @@ export function PreventiviPage() {
       }
     })
 
-    const table = allMonthsOfYear(year).map((period, i) => {
-      const monthQuotes = quotes.filter((q) => q.periodMonth === period)
-      const iCount = sum(monthQuotes.map((q) => q.issuedCount))
-      const cCount = sum(monthQuotes.map((q) => q.confirmedCount))
-      const rate = safeDiv(cCount, iCount)
-      const target = targets.find((t) => t.periodStart === period)?.targetValue ?? null
-      return {
-        label: MONTH_LABELS_IT[i],
-        issuedCount: iCount,
-        issuedValue: sum(monthQuotes.map((q) => q.issuedValue)),
-        confirmedCount: cCount,
-        confirmedValue: sum(monthQuotes.map((q) => q.confirmedValue)),
-        lostCount: sum(monthQuotes.map((q) => q.lostCount)),
-        lostValue: sum(monthQuotes.map((q) => q.lostValue)),
-        closeRate: rate,
-        target,
-        deviation: rate != null && target != null ? rate - target : null,
-      }
-    })
-
-    return { issuedValue, confirmedValue, closeRate, closeRateTarget, avgConfirmedValue, breakdown, trend, table }
+    return { issuedValue, confirmedValue, closeRate, closeRateTarget, avgConfirmedValue, breakdown, trend }
   }, [quotes, priorQuotes, targets, year])
 
   function updateDraft(seg: PatientSegment, field: keyof QuotesMonthly, value: number) {
     setDraft((d) => ({ ...d, [seg]: { ...d[seg], [field]: value } }))
   }
+
+  const sheet = useMemo(() => quotesBlocks({ year, quotes, targets: allTargets, manual }), [year, quotes, allTargets, manual])
 
   return (
     <div>
@@ -208,41 +198,24 @@ export function PreventiviPage() {
         </button>
       </SectionCard>
 
-      <SectionCard title="Dati completi (generali)" subtitle={`Tutti i mesi dell'anno ${year}, nuovi + esistenti`}>
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead>
-              <tr className="border-b border-stone-300 text-xs uppercase tracking-wide text-stone-500">
-                <th className="py-2 pr-4">Mese</th>
-                <th className="py-2 pr-4 text-right">Nr. emessi</th>
-                <th className="py-2 pr-4 text-right">€ emessi</th>
-                <th className="py-2 pr-4 text-right">Nr. confermati</th>
-                <th className="py-2 pr-4 text-right">€ confermati</th>
-                <th className="py-2 pr-4 text-right">Nr. persi</th>
-                <th className="py-2 pr-4 text-right">€ persi</th>
-                <th className="py-2 pr-4 text-right">% Chiusura</th>
-                <th className="py-2 pr-4 text-right">Obiettivo</th>
-                <th className="py-2 text-right">Scostamento</th>
-              </tr>
-            </thead>
-            <tbody>
-              {view.table.map((row) => (
-                <tr key={row.label} className="border-b border-stone-100 last:border-0">
-                  <td className="py-1.5 pr-4 text-navy-700">{row.label}</td>
-                  <td className="py-1.5 pr-4 text-right text-stone-600">{formatInt(row.issuedCount)}</td>
-                  <td className="py-1.5 pr-4 text-right text-stone-600">{formatEur(row.issuedValue)}</td>
-                  <td className="py-1.5 pr-4 text-right text-stone-600">{formatInt(row.confirmedCount)}</td>
-                  <td className="py-1.5 pr-4 text-right font-medium text-navy-900">{formatEur(row.confirmedValue)}</td>
-                  <td className="py-1.5 pr-4 text-right text-stone-600">{formatInt(row.lostCount)}</td>
-                  <td className="py-1.5 pr-4 text-right text-stone-600">{formatEur(row.lostValue)}</td>
-                  <td className="py-1.5 pr-4 text-right text-stone-600">{formatPct(row.closeRate)}</td>
-                  <td className="py-1.5 pr-4 text-right text-stone-600">{formatPct(row.target)}</td>
-                  <td className="py-1.5 text-right text-stone-600">{formatPct(row.deviation)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+      <SectionCard title="Dati completi" subtitle={`Anno ${year} — mesi nelle colonne, per ogni KPI valore, obiettivo e scostamento`}>
+        <SaturationSheetTable
+          blocks={sheet}
+          year={year}
+          emptyHint="inseriscili con «Inserimento dati mensile» qui sopra."
+          notes={
+            <>
+              <p>
+                Come nel foglio Excel "Customer Experience": prima i KPI dei soli nuovi pazienti, poi quelli generali (nuovi + esistenti). Colonna Anno: somma dei mesi; per valori medi e % di
+                chiusura è il rapporto dei totali dell'anno. Lo scostamento è calcolato solo sui mesi con dato (per le % è in punti percentuali).
+              </p>
+              <p>
+                Obiettivi: preventivi emessi (nuovi) = obiettivo nuovi pazienti; confermati (nuovi) = emessi × % di chiusura obiettivo; valori e % di chiusura dai budget mensili
+                inseriti in «Inserimento dati»; valori medi dal budget annuo. Le righe senza obiettivo (persi) mostrano solo il valore.
+              </p>
+            </>
+          }
+        />
       </SectionCard>
     </div>
   )

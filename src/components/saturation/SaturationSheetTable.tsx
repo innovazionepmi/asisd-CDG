@@ -2,6 +2,7 @@ import { Fragment } from 'react'
 import clsx from 'clsx'
 import { formatEur, formatInt, formatPct } from '../../lib/calc'
 import { MONTH_LABELS_SHORT_IT } from '../../lib/periods'
+import type { ReactNode } from 'react'
 import type { SheetBlock, SheetFormat, SheetMonth } from '../../lib/saturationSheet'
 
 const decimal = new Intl.NumberFormat('it-IT', { maximumFractionDigits: 1 })
@@ -36,13 +37,35 @@ function deviationTone(m: SheetMonth, judged: boolean): string {
   return m.deviation > 0 ? 'text-success-600' : 'text-danger-600'
 }
 
-export function SaturationSheetTable({ blocks, year }: { blocks: SheetBlock[]; year: number }) {
-  const hasData = blocks.some((b) => b.months.some((m) => m.actual != null))
+const STATUS_BADGE: Record<string, string> = {
+  positivo: 'bg-success-100 text-success-600',
+  negativo: 'bg-danger-100 text-danger-600',
+  pareggio: 'bg-stone-100 text-stone-600',
+}
+
+const DEFAULT_NOTES = (
+  <>
+    <p>
+      Colonna Anno: somma dei mesi per conteggi e valori, media dei mesi con dato per le percentuali; l'obiettivo è quello dell'intero anno. Lo
+      scostamento è calcolato solo sui mesi con dato (un mese a zero o non inserito resta "—") e, per le percentuali, è la differenza in punti percentuali (es. +1,2% = 1,2 punti in più).
+      Verde = sopra obiettivo, rosso = sotto.
+    </p>
+    <p>
+      L'obiettivo della produzione del titolare si ricava da obiettivo produzione × obiettivo % titolare, come nel file Excel. Per le due righe del
+      titolare lo scostamento resta neutro: non è detto che superare l'obiettivo sia meglio.
+    </p>
+    <p>I dati si inseriscono nelle pagine Traffico (visite), Produzione (produzione e igiene) e qui sotto (saturazione): questa tabella li riunisce.</p>
+  </>
+)
+
+/** Tabella a mesi nelle colonne (come i fogli Excel): per ogni KPI valore, obiettivo e scostamento. */
+export function SaturationSheetTable({ blocks, year, notes, emptyHint }: { blocks: SheetBlock[]; year: number; notes?: ReactNode; emptyHint?: string }) {
+  const hasData = blocks.some((b) => b.kind !== 'status' && b.months.some((m) => m.actual != null))
 
   return (
     <div>
       {!hasData && (
-        <p className="mb-3 rounded-card bg-stone-100 px-3 py-2 text-xs text-stone-600">Nessun dato per il {year}: inseriscili nelle pagine Traffico, Produzione e Saturazione.</p>
+        <p className="mb-3 rounded-card bg-stone-100 px-3 py-2 text-xs text-stone-600">Nessun dato per il {year}: {emptyHint ?? 'inseriscili nelle pagine Traffico, Produzione e Saturazione.'}</p>
       )}
       <div className="overflow-x-auto rounded-card border border-stone-300">
         <table className="w-full border-separate border-spacing-0 text-left">
@@ -69,6 +92,21 @@ export function SaturationSheetTable({ blocks, year }: { blocks: SheetBlock[]; y
                 'sticky left-0 z-10 max-w-[140px] bg-white px-2.5 py-1.5 text-left align-middle md:w-[250px] md:max-w-[250px] md:px-3'
               const totalBase = 'border-r border-stone-300 bg-navy-50 md:sticky md:left-[250px] md:z-10'
               const topBorder = bi > 0 ? 'border-t border-stone-300' : ''
+              if (block.kind === 'status') {
+                return (
+                  <tr key={block.key}>
+                    <th scope="row" className={clsx(labelBase, 'border-b border-stone-100 text-xs font-bold text-navy-900 md:text-sm', topBorder)}>
+                      {block.label}
+                    </th>
+                    <td className={clsx(rowBase, totalBase, topBorder)} />
+                    {(block.statuses ?? []).map((s, i) => (
+                      <td key={i} className={clsx(rowBase, topBorder)}>
+                        {s ? <span className={clsx('rounded-full px-2 py-0.5 text-[11px] font-medium capitalize', STATUS_BADGE[s] ?? 'bg-stone-100 text-stone-600')}>{s}</span> : <span className="text-stone-300">—</span>}
+                      </td>
+                    ))}
+                  </tr>
+                )
+              }
               return (
                 <Fragment key={block.key}>
                   <tr key={`${block.key}-v`}>
@@ -84,6 +122,7 @@ export function SaturationSheetTable({ blocks, year }: { blocks: SheetBlock[]; y
                       </td>
                     ))}
                   </tr>
+                  {!block.noTarget && (
                   <tr key={`${block.key}-t`}>
                     <th scope="row" className={clsx(labelBase, 'border-b border-stone-100 pl-5 text-[11px] font-medium text-stone-500 md:pl-6 md:text-xs')}>
                       → Obiettivo
@@ -95,6 +134,8 @@ export function SaturationSheetTable({ blocks, year }: { blocks: SheetBlock[]; y
                       </td>
                     ))}
                   </tr>
+                  )}
+                  {!block.noTarget && (
                   <tr key={`${block.key}-d`}>
                     <th scope="row" className={clsx(labelBase, 'border-b border-stone-100 pl-5 text-[11px] font-medium text-stone-500 md:pl-6 md:text-xs')}>
                       → Scostamento su obiettivo
@@ -108,6 +149,7 @@ export function SaturationSheetTable({ blocks, year }: { blocks: SheetBlock[]; y
                       </td>
                     ))}
                   </tr>
+                  )}
                 </Fragment>
               )
             })}
@@ -116,16 +158,7 @@ export function SaturationSheetTable({ blocks, year }: { blocks: SheetBlock[]; y
       </div>
 
       <div className="mt-3 space-y-1 text-xs text-stone-500">
-        <p>
-          Colonna Anno: somma dei mesi per conteggi e valori, media dei mesi con dato per le percentuali; l'obiettivo è quello dell'intero anno. Lo
-          scostamento è calcolato solo sui mesi con dato (un mese a zero o non inserito resta "—") e, per le percentuali, è la differenza in punti percentuali (es. +1,2% = 1,2 punti in più).
-          Verde = sopra obiettivo, rosso = sotto.
-        </p>
-        <p>
-          L'obiettivo della produzione del titolare si ricava da obiettivo produzione × obiettivo % titolare, come nel file Excel. Per le due righe del
-          titolare lo scostamento resta neutro: non è detto che superare l'obiettivo sia meglio.
-        </p>
-        <p>I dati si inseriscono nelle pagine Traffico (visite), Produzione (produzione e igiene) e qui sotto (saturazione): questa tabella li riunisce.</p>
+        {notes ?? DEFAULT_NOTES}
       </div>
     </div>
   )

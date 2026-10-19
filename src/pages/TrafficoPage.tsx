@@ -6,8 +6,10 @@ import { KpiCard } from '../components/ui/KpiCard'
 import { MonthSelect, YearSelect } from '../components/ui/PeriodSelect'
 import { NumberField } from '../components/ui/NumberField'
 import { SectionCard } from '../components/ui/SectionCard'
+import { SaturationSheetTable } from '../components/saturation/SaturationSheetTable'
 import { deviationPct, formatInt, sum, trendOf } from '../lib/calc'
-import { allMonthsOfYear, monthKey, MONTH_LABELS_IT, MONTH_LABELS_SHORT_IT } from '../lib/periods'
+import { trafficBlocks } from '../lib/monthlySheets'
+import { allMonthsOfYear, monthKey, MONTH_LABELS_SHORT_IT } from '../lib/periods'
 import { dataProvider } from '../lib/provider'
 import { DEFAULT_YEAR, SELECTABLE_YEARS } from '../lib/years'
 import type { Channel, KpiTarget, MonthlyVisit } from '../lib/types'
@@ -22,6 +24,7 @@ export function TrafficoPage() {
   const [visits, setVisits] = useState<MonthlyVisit[]>([])
   const [priorVisits, setPriorVisits] = useState<MonthlyVisit[]>([])
   const [targets, setTargets] = useState<KpiTarget[]>([])
+  const [allTargets, setAllTargets] = useState<KpiTarget[]>([])
   const [draft, setDraft] = useState<Record<string, number>>({})
   const [draftTargetNewPatients, setDraftTargetNewPatients] = useState(0)
   const [draftTargetReactivated, setDraftTargetReactivated] = useState(0)
@@ -37,6 +40,7 @@ export function TrafficoPage() {
     setChannels(ch)
     setVisits(v)
     setPriorVisits(pv)
+    setAllTargets(t)
     setTargets(t.filter((x) => x.metricKey === NEW_PATIENTS_TARGET_KEY || x.metricKey === REACTIVATED_TARGET_KEY))
   }
 
@@ -86,20 +90,10 @@ export function TrafficoPage() {
       precedente: sum(priorVisits.filter((v) => v.periodMonth === allMonthsOfYear(year - 1)[i] && !reactivationIds.has(v.channelId)).map((v) => v.visitCount)),
     }))
 
-    const table = allMonthsOfYear(year).map((period, i) => {
-      const monthTotal = sum(channels.map((ch) => visits.find((v) => v.periodMonth === period && v.channelId === ch.id)?.visitCount ?? 0))
-      const target = targets.find((t) => t.periodStart === period && t.metricKey === NEW_PATIENTS_TARGET_KEY)?.targetValue ?? null
-      return {
-        label: MONTH_LABELS_IT[i],
-        values: channels.map((ch) => visits.find((v) => v.periodMonth === period && v.channelId === ch.id)?.visitCount ?? 0),
-        total: monthTotal,
-        target,
-        deviation: target != null ? monthTotal - target : null,
-      }
-    })
-
-    return { total, totalPrior, reactivated, newPatientsTargetTotal, reactivatedTargetTotal, byChannel, trend, table }
+    return { total, totalPrior, reactivated, newPatientsTargetTotal, reactivatedTargetTotal, byChannel, trend }
   }, [channels, visits, priorVisits, targets, year])
+
+  const sheet = useMemo(() => trafficBlocks({ year, channels, visits, targets: allTargets }), [year, channels, visits, allTargets])
 
   return (
     <div>
@@ -165,39 +159,20 @@ export function TrafficoPage() {
         </button>
       </SectionCard>
 
-      <SectionCard title="Dati completi" subtitle={`Tutti i mesi dell'anno ${year}`}>
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead>
-              <tr className="border-b border-stone-300 text-xs uppercase tracking-wide text-stone-500">
-                <th className="py-2 pr-4">Mese</th>
-                {channels.map((ch) => (
-                  <th key={ch.id} className="py-2 pr-4 text-right">
-                    {ch.name}
-                  </th>
-                ))}
-                <th className="py-2 pr-4 text-right font-semibold">Totale</th>
-                <th className="py-2 pr-4 text-right">Obiettivo</th>
-                <th className="py-2 text-right">Scostamento</th>
-              </tr>
-            </thead>
-            <tbody>
-              {view.table.map((row) => (
-                <tr key={row.label} className="border-b border-stone-100 last:border-0">
-                  <td className="py-1.5 pr-4 text-navy-700">{row.label}</td>
-                  {row.values.map((v, i) => (
-                    <td key={i} className="py-1.5 pr-4 text-right text-stone-600">
-                      {formatInt(v)}
-                    </td>
-                  ))}
-                  <td className="py-1.5 pr-4 text-right font-medium text-navy-900">{formatInt(row.total)}</td>
-                  <td className="py-1.5 pr-4 text-right text-stone-600">{formatInt(row.target)}</td>
-                  <td className="py-1.5 text-right text-stone-600">{formatInt(row.deviation)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+      <SectionCard title="Dati completi" subtitle={`Anno ${year} — mesi nelle colonne, per ogni KPI valore, obiettivo e scostamento`}>
+        <SaturationSheetTable
+          blocks={sheet}
+          year={year}
+          emptyHint="inseriscili con «Inserimento dati mensile» qui sopra."
+          notes={
+            <>
+              <p>
+                Come nel foglio Excel "Saturazione": per ogni KPI valore, obiettivo e scostamento su obiettivo, con la colonna Anno (somma dei mesi; l'obiettivo è quello dell'intero anno).
+                Lo scostamento è calcolato solo sui mesi con dato. Le righe "Visite" per canale non hanno obiettivo.
+              </p>
+            </>
+          }
+        />
       </SectionCard>
     </div>
   )

@@ -529,7 +529,7 @@ function buildSectionDefs(input: SheetInput): SectionDef[] {
       monthly: closeRateSeries(),
       budgetKey: 'quotes.close_rate',
     }),
-    S({ key: 'q_close_rate_pv', label: 'Di cui % Chiusura Prev P. Visita', level: 1, ancestors: ['q_close_rate'], xl: 50, format: 'percent', tone: 'higher', agg: 'avg', monthly: closeRateSeries(true) }),
+    S({ key: 'q_close_rate_pv', label: 'Di cui % Chiusura Prev P. Visita', level: 1, ancestors: ['q_close_rate'], xl: 50, format: 'percent', tone: 'higher', agg: 'avg', monthly: closeRateSeries(true), budgetKey: 'quotes.close_rate_pv' }),
   ]
 
   const produzione: Spec[] = [

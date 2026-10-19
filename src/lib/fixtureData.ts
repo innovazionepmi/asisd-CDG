@@ -154,6 +154,7 @@ const ADVANCE_PAYMENTS_PCT_2025 = [
 ]
 const ADVANCE_PAYMENTS_TARGET_2025 = [0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25]
 // % Chiusura preventivi generale (Customer Experience, riga 26).
+const CLOSE_RATE_PV_TARGET_2025 = [0.55, 0.55, 0.55, 0.57, 0.57, 0.57, 0.6, 0.6, 0.6, 0.62, 0.62, 0.62]
 const CLOSE_RATE_TARGET_2025 = [0.69, 0.69, 0.69, 0.71, 0.71, 0.71, 0.73, 0.73, 0.73, 0.73, 0.73, 0.73]
 
 // Conto economico trimestrale: delta reali per trimestre (Co.Ge Trimestrale).
@@ -348,6 +349,7 @@ function buildTargets(year: number, growthFactor: number): KpiTarget[] {
   push('production.saturation_pct', SATURATION_TARGET_2025)
   push('cashflow.advance_payments_pct', ADVANCE_PAYMENTS_TARGET_2025)
   push('quotes.close_rate', CLOSE_RATE_TARGET_2025)
+  push('quotes.close_rate_pv', CLOSE_RATE_PV_TARGET_2025)
   // budget annui del foglio "Aggregato Trimestrale" ripartiti in 12 mesi uguali
   const flat = (annual: number) => Array(12).fill(annual / 12)
   push('quotes.issued_count', grow(flat(1510), growthFactor))

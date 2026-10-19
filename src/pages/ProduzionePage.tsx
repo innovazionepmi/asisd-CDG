@@ -7,8 +7,10 @@ import { MonthSelect, YearSelect } from '../components/ui/PeriodSelect'
 import { NumberField } from '../components/ui/NumberField'
 import { PercentField } from '../components/ui/PercentField'
 import { SectionCard } from '../components/ui/SectionCard'
+import { SaturationSheetTable } from '../components/saturation/SaturationSheetTable'
 import { deviationPct, formatEur, formatInt, formatPct, safeDiv, sum, trendOf } from '../lib/calc'
-import { allMonthsOfYear, monthKey, MONTH_LABELS_IT, MONTH_LABELS_SHORT_IT } from '../lib/periods'
+import { productionBlocks } from '../lib/monthlySheets'
+import { allMonthsOfYear, monthKey, MONTH_LABELS_SHORT_IT } from '../lib/periods'
 import { dataProvider } from '../lib/provider'
 import { DEFAULT_YEAR, SELECTABLE_YEARS } from '../lib/years'
 import type { HygieneSessionsMonthly, KpiTarget, ProductionMonthly, ProductionTitolareMonthly, TreatmentCategory } from '../lib/types'
@@ -27,6 +29,7 @@ export function ProduzionePage() {
   const [titolare, setTitolare] = useState<ProductionTitolareMonthly[]>([])
   const [hygiene, setHygiene] = useState<HygieneSessionsMonthly[]>([])
   const [targets, setTargets] = useState<KpiTarget[]>([])
+  const [allTargets, setAllTargets] = useState<KpiTarget[]>([])
   const [draftCategories, setDraftCategories] = useState<Record<string, number>>({})
   const [draftTitolare, setDraftTitolare] = useState(0)
   const [draftHygiene, setDraftHygiene] = useState(0)
@@ -52,6 +55,7 @@ export function ProduzionePage() {
     setPriorProduction(priorProd)
     setTitolare(tit)
     setHygiene(hyg)
+    setAllTargets(tg)
     setTargets(tg.filter((t) => relevantKeys.includes(t.metricKey)))
   }
 
@@ -120,21 +124,10 @@ export function ProduzionePage() {
       precedente: sum(priorProduction.filter((p) => p.periodMonth === allMonthsOfYear(year - 1)[i]).map((p) => p.productionValue)),
     }))
 
-    const table = allMonthsOfYear(year).map((period, i) => {
-      const monthTotal = sum(production.filter((p) => p.periodMonth === period).map((p) => p.productionValue))
-      const target = targets.find((t) => t.periodStart === period && t.metricKey === TOTAL_TARGET_KEY)?.targetValue ?? null
-      return {
-        label: MONTH_LABELS_IT[i],
-        total: monthTotal,
-        titolare: titolare.find((t) => t.periodMonth === period)?.productionValue ?? 0,
-        hygiene: hygiene.find((h) => h.periodMonth === period)?.sessionCount ?? 0,
-        target,
-        deviation: target != null ? monthTotal - target : null,
-      }
-    })
-
-    return { total, totalPrior, titolareTotal, titolareShare, hygieneTotal, totalTarget, titolareShareTarget, hygieneTarget, byCategory, trend, table }
+    return { total, totalPrior, titolareTotal, titolareShare, hygieneTotal, totalTarget, titolareShareTarget, hygieneTarget, byCategory, trend }
   }, [production, priorProduction, titolare, hygiene, targets, categories, year])
+
+  const sheet = useMemo(() => productionBlocks({ year, categories, production, titolare, hygiene, targets: allTargets }), [year, categories, production, titolare, hygiene, allTargets])
 
   return (
     <div>
@@ -217,33 +210,23 @@ export function ProduzionePage() {
         </button>
       </SectionCard>
 
-      <SectionCard title="Dati completi" subtitle={`Tutti i mesi dell'anno ${year}`}>
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead>
-              <tr className="border-b border-stone-300 text-xs uppercase tracking-wide text-stone-500">
-                <th className="py-2 pr-4">Mese</th>
-                <th className="py-2 pr-4 text-right">Produzione totale</th>
-                <th className="py-2 pr-4 text-right">Di cui Titolare</th>
-                <th className="py-2 pr-4 text-right">Sedute igiene</th>
-                <th className="py-2 pr-4 text-right">Obiettivo</th>
-                <th className="py-2 text-right">Scostamento</th>
-              </tr>
-            </thead>
-            <tbody>
-              {view.table.map((row) => (
-                <tr key={row.label} className="border-b border-stone-100 last:border-0">
-                  <td className="py-1.5 pr-4 text-navy-700">{row.label}</td>
-                  <td className="py-1.5 pr-4 text-right font-medium text-navy-900">{formatEur(row.total)}</td>
-                  <td className="py-1.5 pr-4 text-right text-stone-600">{formatEur(row.titolare)}</td>
-                  <td className="py-1.5 pr-4 text-right text-stone-600">{formatInt(row.hygiene)}</td>
-                  <td className="py-1.5 pr-4 text-right text-stone-600">{formatEur(row.target)}</td>
-                  <td className="py-1.5 text-right text-stone-600">{formatEur(row.deviation)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+      <SectionCard title="Dati completi" subtitle={`Anno ${year} — mesi nelle colonne, per ogni KPI valore, obiettivo e scostamento`}>
+        <SaturationSheetTable
+          blocks={sheet}
+          year={year}
+          emptyHint="inseriscili con «Inserimento dati mensile» qui sopra."
+          notes={
+            <>
+              <p>
+                Come nel foglio Excel "Saturazione": per ogni KPI valore, obiettivo e scostamento su obiettivo, con la colonna Anno (somma dei mesi, media per la % titolare; l'obiettivo è quello dell'intero anno).
+                Lo scostamento è calcolato solo sui mesi con dato. Le righe "Produzione" per tipologia non hanno obiettivo.
+              </p>
+              <p>
+                L'obiettivo della produzione del titolare si ricava da obiettivo produzione × obiettivo % titolare, come nel file Excel; per le due righe del titolare lo scostamento resta neutro.
+              </p>
+            </>
+          }
+        />
       </SectionCard>
     </div>
   )

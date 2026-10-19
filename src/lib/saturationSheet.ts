@@ -43,6 +43,11 @@ export interface SheetBlock {
   judged: boolean
   months: SheetMonth[]
   total: SheetMonth
+  /** Riga di solo valore (senza obiettivo e scostamento). */
+  noTarget?: boolean
+  /** Riga di stato (es. situazione cashflow: positivo / negativo / pareggio) al posto dei numeri. */
+  kind?: 'status'
+  statuses?: (string | null)[]
 }
 
 export interface SheetInput {
@@ -59,7 +64,7 @@ export interface SheetInput {
 const sumOf = (values: number[]) => values.reduce((a, b) => a + b, 0)
 const mean = (values: number[]) => (values.length ? sumOf(values) / values.length : null)
 
-function buildBlock(
+export function buildBlock(
   key: string,
   label: string,
   format: SheetFormat,
@@ -67,6 +72,7 @@ function buildBlock(
   judged: boolean,
   actuals: (number | null)[],
   targets: (number | null)[],
+  opts?: { totalActual?: number | null; noTarget?: boolean },
 ): SheetBlock {
   const months: SheetMonth[] = actuals.map((actual, i) => {
     const target = targets[i]
@@ -96,8 +102,13 @@ function buildBlock(
       target: mean(allTargets),
       deviation: avgActualComparable != null && avgTargetComparable != null ? avgActualComparable - avgTargetComparable : null,
     }
+    // totale che non e' la media dei mesi (es. rapporto dei totali: valore medio, % di chiusura)
+    if (opts?.totalActual !== undefined) {
+      total.actual = opts.totalActual
+      total.deviation = opts.totalActual != null && avgTargetComparable != null ? opts.totalActual - avgTargetComparable : null
+    }
   }
-  return { key, label, format, totalMode, judged, months, total }
+  return { key, label, format, totalMode, judged, months, total, noTarget: opts?.noTarget }
 }
 
 export function buildSaturationSheet(input: SheetInput): SheetBlock[] {

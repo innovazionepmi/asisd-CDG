@@ -16,7 +16,8 @@ insert into metric_catalog (metric_key, label, unit, stage, grain) values
   ('quotes.issued_value', 'Preventivi emessi (€)', 'currency', 'preventivi', 'month'),
   ('quotes.confirmed_value', 'Preventivi confermati (€)', 'currency', 'preventivi', 'month'),
   ('quotes.issued_value_pv', 'Preventivi emessi prima visita (€)', 'currency', 'preventivi', 'month'),
-  ('quotes.confirmed_value_pv', 'Preventivi confermati prima visita (€)', 'currency', 'preventivi', 'month')
+  ('quotes.confirmed_value_pv', 'Preventivi confermati prima visita (€)', 'currency', 'preventivi', 'month'),
+  ('quotes.close_rate_pv', '% di chiusura prima visita (obiettivo)', 'percent', 'preventivi', 'month')
 on conflict (metric_key) do nothing;
 
 -- ------------------------------------------------------------

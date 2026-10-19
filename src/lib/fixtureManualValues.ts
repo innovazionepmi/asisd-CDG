@@ -43,7 +43,6 @@ export const MANUAL_VALUES: ManualValue[] = [
   { fiscalYear: 2025, rowKey: 'q_avg_confirmed_pv', colKey: 'budget', value: 3500 },
   { fiscalYear: 2025, rowKey: 'q_avg_lost', colKey: 'afp', value: 4733 },
   { fiscalYear: 2025, rowKey: 'q_close_rate', colKey: 'afp', value: 0.614 },
-  { fiscalYear: 2025, rowKey: 'q_close_rate_pv', colKey: 'budget', value: 0.585 },
   { fiscalYear: 2025, rowKey: 'production_total', colKey: 'afp', value: 1358000 },
   { fiscalYear: 2025, rowKey: 'cat:tc-chirurgia', colKey: 'afp', value: 51196 },
   { fiscalYear: 2025, rowKey: 'cat:tc-chirurgia', colKey: 'budget', value: 63612 },

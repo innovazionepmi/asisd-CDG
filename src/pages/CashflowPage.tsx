@@ -7,8 +7,10 @@ import { MonthSelect, YearSelect } from '../components/ui/PeriodSelect'
 import { NumberField } from '../components/ui/NumberField'
 import { PercentField } from '../components/ui/PercentField'
 import { SectionCard } from '../components/ui/SectionCard'
+import { SaturationSheetTable } from '../components/saturation/SaturationSheetTable'
 import { deviationPct, formatEur, formatPct, sum, trendOf } from '../lib/calc'
-import { allMonthsOfYear, monthKey, MONTH_LABELS_IT, MONTH_LABELS_SHORT_IT } from '../lib/periods'
+import { cashflowBlocks } from '../lib/monthlySheets'
+import { allMonthsOfYear, monthKey, MONTH_LABELS_SHORT_IT } from '../lib/periods'
 import { dataProvider } from '../lib/provider'
 import { DEFAULT_YEAR, SELECTABLE_YEARS } from '../lib/years'
 import type { CashflowMonthly, CashflowStatus, KpiTarget } from '../lib/types'
@@ -44,6 +46,7 @@ export function CashflowPage() {
   const [rows, setRows] = useState<CashflowMonthly[]>([])
   const [priorRows, setPriorRows] = useState<CashflowMonthly[]>([])
   const [targets, setTargets] = useState<KpiTarget[]>([])
+  const [allTargets, setAllTargets] = useState<KpiTarget[]>([])
   const [draft, setDraft] = useState<CashflowMonthly>(EMPTY)
   const [draftTarget, setDraftTarget] = useState(0)
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved'>('idle')
@@ -56,6 +59,7 @@ export function CashflowPage() {
     ])
     setRows(r)
     setPriorRows(pr)
+    setAllTargets(t)
     setTargets(t.filter((x) => x.metricKey === TARGET_KEY))
   }
 
@@ -110,24 +114,10 @@ export function CashflowPage() {
       obiettivo: targets.find((t) => t.periodStart === period)?.targetValue ?? null,
     }))
 
-    const table = allMonthsOfYear(year).map((period, i) => {
-      const row = rows.find((r) => r.periodMonth === period)
-      const target = targets.find((t) => t.periodStart === period)?.targetValue ?? null
-      const pct = row?.advancePaymentsPct ?? null
-      return {
-        label: MONTH_LABELS_IT[i],
-        status: row?.status ?? null,
-        advance: row?.advancePaymentsValue ?? 0,
-        pct,
-        target,
-        deviation: pct != null && target != null ? pct - target : null,
-        overdue: row?.overdueReceivables ?? 0,
-        planned: row?.plannedReceivables ?? 0,
-      }
-    })
-
-    return { advanceTotal, advanceTotalPrior, avgPct, avgTarget, receivablesBreakdown, trend, pctTrend, table, latestOverdue: latest?.overdueReceivables ?? 0 }
+    return { advanceTotal, advanceTotalPrior, avgPct, avgTarget, receivablesBreakdown, trend, pctTrend, latestOverdue: latest?.overdueReceivables ?? 0 }
   }, [rows, priorRows, targets, year])
+
+  const sheet = useMemo(() => cashflowBlocks({ year, rows, targets: allTargets }), [year, rows, allTargets])
 
   return (
     <div>
@@ -220,39 +210,24 @@ export function CashflowPage() {
         </button>
       </SectionCard>
 
-      <SectionCard title="Dati completi" subtitle={`Tutti i mesi dell'anno ${year}`}>
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead>
-              <tr className="border-b border-stone-300 text-xs uppercase tracking-wide text-stone-500">
-                <th className="py-2 pr-4">Mese</th>
-                <th className="py-2 pr-4">Situazione</th>
-                <th className="py-2 pr-4 text-right">Incassi anticipati</th>
-                <th className="py-2 pr-4 text-right">% Incassi anticipati</th>
-                <th className="py-2 pr-4 text-right">Obiettivo</th>
-                <th className="py-2 pr-4 text-right">Scostamento</th>
-                <th className="py-2 pr-4 text-right">Crediti pianificati</th>
-                <th className="py-2 text-right">Crediti scaduti</th>
-              </tr>
-            </thead>
-            <tbody>
-              {view.table.map((row) => (
-                <tr key={row.label} className="border-b border-stone-100 last:border-0">
-                  <td className="py-1.5 pr-4 text-navy-700">{row.label}</td>
-                  <td className="py-1.5 pr-4">
-                    {row.status && <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_BADGE[row.status]}`}>{row.status}</span>}
-                  </td>
-                  <td className="py-1.5 pr-4 text-right font-medium text-navy-900">{formatEur(row.advance)}</td>
-                  <td className="py-1.5 pr-4 text-right text-stone-600">{formatPct(row.pct)}</td>
-                  <td className="py-1.5 pr-4 text-right text-stone-600">{formatPct(row.target)}</td>
-                  <td className="py-1.5 pr-4 text-right text-stone-600">{formatPct(row.deviation)}</td>
-                  <td className="py-1.5 pr-4 text-right text-stone-600">{formatEur(row.planned)}</td>
-                  <td className="py-1.5 text-right text-stone-600">{formatEur(row.overdue)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+      <SectionCard title="Dati completi" subtitle={`Anno ${year} — mesi nelle colonne, per ogni KPI valore, obiettivo e scostamento`}>
+        <SaturationSheetTable
+          blocks={sheet}
+          year={year}
+          emptyHint="inseriscili con «Inserimento dati mensile» qui sopra."
+          notes={
+            <>
+              <p>
+                Come nel foglio Excel "CashFlow": situazione del mese, incassi anticipati, % incassi anticipati, crediti scaduti e ricavi del periodo, ciascuno con obiettivo e scostamento.
+                Colonna Anno: somma dei mesi per gli importi, media dei mesi con dato per le percentuali e per i crediti (livello a fine mese); lo scostamento è calcolato solo sui mesi con dato.
+              </p>
+              <p>
+                I ricavi effettivi non si inseriscono a mese: si leggono a trimestre nella pagina Economics, qui compare solo l'obiettivo mensile (budget inserito in «Inserimento dati»).
+                Le righe dei crediti pianificati, non pianificati e terzo pagante non hanno obiettivo mensile.
+              </p>
+            </>
+          }
+        />
       </SectionCard>
     </div>
   )
