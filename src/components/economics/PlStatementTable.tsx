@@ -32,7 +32,7 @@ function DeltaChip({ cell, kind }: { cell: PlCell; kind: PlRowDef['kind'] }) {
   const rounded = Math.round(cell.delta * 1000) / 10
   const flat = rounded === 0
   const good = higherIsBetter(kind) ? cell.delta > 0 : cell.delta < 0
-  const text = `${deltaFmt.format(cell.delta * 100)}${cell.deltaKind === 'pp' ? ' pp' : '%'}`
+  const text = `${deltaFmt.format(cell.delta * 100)}%`
   return (
     <span
       className={clsx(
@@ -231,7 +231,7 @@ export function PlStatementTable({
       <div className="mt-3 space-y-1 text-xs text-stone-500">
         <p>
           Sotto ogni importo: incidenza sui ricavi del periodo e scostamento rispetto all'AFP. Per i ricavi (periodi di 12 mesi) lo scostamento è la
-          variazione %; per le altre voci è la differenza di incidenza in punti percentuali (pp). Verde = meglio dell'AFP, rosso = peggio.
+          variazione %; per le altre voci è la differenza di incidenza in punti percentuali (es. +1,2% = 1,2 punti in più). Verde = meglio dell'AFP, rosso = peggio.
         </p>
         {mode === 'forecast' && (
           <p>

@@ -25,7 +25,7 @@ function formatTarget(v: number | null, format: SheetFormat): string {
 
 function formatDeviation(v: number | null, format: SheetFormat): string {
   if (v == null) return '—'
-  if (format === 'percent') return `${signedDecimal.format(v * 100)} pp`
+  if (format === 'percent') return `${signedDecimal.format(v * 100)}%`
   if (format === 'currency') return `${signedInt.format(v)} €`
   return signedDecimal.format(v)
 }
@@ -118,7 +118,7 @@ export function SaturationSheetTable({ blocks, year }: { blocks: SheetBlock[]; y
       <div className="mt-3 space-y-1 text-xs text-stone-500">
         <p>
           Colonna Anno: somma dei mesi per conteggi e valori, media dei mesi con dato per le percentuali; l'obiettivo è quello dell'intero anno. Lo
-          scostamento è calcolato solo sui mesi con dato (un mese a zero o non inserito resta "—") e, per le percentuali, è in punti percentuali (pp).
+          scostamento è calcolato solo sui mesi con dato (un mese a zero o non inserito resta "—") e, per le percentuali, è la differenza in punti percentuali (es. +1,2% = 1,2 punti in più).
           Verde = sopra obiettivo, rosso = sotto.
         </p>
         <p>

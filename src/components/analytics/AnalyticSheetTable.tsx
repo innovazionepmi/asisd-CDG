@@ -24,7 +24,7 @@ const GROUP_LABELS: { group: ColGroup[]; label: string }[] = [
 function formatCell(cell: SheetCell): string {
   const v = cell.value
   if (v == null) return '—'
-  if (cell.dev === 'pp') return `${signedDecimal.format(v * 100)} pp`
+  if (cell.dev === 'pp') return `${signedDecimal.format(v * 100)}%`
   if (cell.dev === 'rel') return `${signedDecimal.format(v * 100)}%`
   if (cell.dev === 'abs') return cell.fmt === 'currency' ? `${signedInt.format(v)} €` : signedDecimal.format(v)
   if (cell.fmt === 'currency') return formatEur(v)
@@ -253,12 +253,12 @@ export function AnalyticSheetTable({ sections, year }: { sections: SheetSection[
         <p>
           <span className="font-semibold text-stone-600">Come leggere la tabella.</span> Le colonne sono quelle del foglio Excel "Aggregato Trimestrale",
           identiche in ogni sezione per poter scorrere una colonna dall'alto in basso. Verde = meglio del riferimento, rosso = peggio, grigio = nessun
-          giudizio; le percentuali si confrontano in punti percentuali (pp). Le celle a righe grigie non sono applicabili; "—" indica un dato non disponibile
+          giudizio; le percentuali si confrontano come differenza (es. +1,2% = 1,2 punti percentuali in più). Le celle a righe grigie non sono applicabili; "—" indica un dato non disponibile
           (non ancora inserito nelle pagine dedicate o senza riferimento AFP/budget per {year}).
         </p>
         <p>
           Scostamenti dell'anno: confronto solo sui trimestri con dato. Budget del trimestre: somma o media degli obiettivi mensili (per percentuali e valori
-          medi non si divide per 4). AFP: dati reali dell'anno precedente. Nel conto economico gli scostamenti sono sull'incidenza sui ricavi (pp), con i ricavi
+          medi non si divide per 4). AFP: dati reali dell'anno precedente. Nel conto economico gli scostamenti sono sull'incidenza sui ricavi (differenza in punti percentuali, mostrata con %), con i ricavi
           in variazione %. Clicca sull'intestazione di una colonna per evidenziarla.
         </p>
       </div>
