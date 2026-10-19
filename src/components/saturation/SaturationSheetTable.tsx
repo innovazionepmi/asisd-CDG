@@ -54,7 +54,7 @@ const DEFAULT_NOTES = (
       L'obiettivo della produzione del titolare si ricava da obiettivo produzione × obiettivo % titolare, come nel file Excel. Per le due righe del
       titolare lo scostamento resta neutro: non è detto che superare l'obiettivo sia meglio.
     </p>
-    <p>I dati si inseriscono nelle pagine Traffico (visite), Produzione (produzione e igiene) e qui sotto (saturazione): questa tabella li riunisce.</p>
+    <p>I dati si inseriscono nelle pagine Saturazione: traffico (visite), Produzione (produzione e igiene) e qui sotto (saturazione): questa tabella li riunisce.</p>
   </>
 )
 
@@ -65,7 +65,7 @@ export function SaturationSheetTable({ blocks, year, notes, emptyHint }: { block
   return (
     <div>
       {!hasData && (
-        <p className="mb-3 rounded-card bg-stone-100 px-3 py-2 text-xs text-stone-600">Nessun dato per il {year}: {emptyHint ?? 'inseriscili nelle pagine Traffico, Produzione e Saturazione.'}</p>
+        <p className="mb-3 rounded-card bg-stone-100 px-3 py-2 text-xs text-stone-600">Nessun dato per il {year}: {emptyHint ?? 'inseriscili nelle pagine Saturazione: traffico, Produzione e Saturazione.'}</p>
       )}
       <div className="overflow-x-auto rounded-card border border-stone-300">
         <table className="w-full border-separate border-spacing-0 text-left">

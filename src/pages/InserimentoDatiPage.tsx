@@ -16,7 +16,7 @@ type TabId = 'refs' | 'traffico' | 'preventivi' | 'produzione' | 'cashflow' | 'p
 
 const TABS: { id: TabId; label: string }[] = [
   { id: 'refs', label: 'Riferimenti (AFP e budget)' },
-  { id: 'traffico', label: 'Traffico' },
+  { id: 'traffico', label: 'Saturazione: traffico' },
   { id: 'preventivi', label: 'Preventivi' },
   { id: 'produzione', label: 'Produzione' },
   { id: 'cashflow', label: 'Cashflow' },
@@ -28,7 +28,7 @@ const AREAS: Record<Exclude<TabId, 'refs' | 'parametri'>, { quarterly: string[];
   traffico: {
     quarterly: ['families', 'cac', 'vmp'],
     yearly: [],
-    note: 'Le visite per canale e i pazienti riattivati effettivi si inseriscono, per ora, nella pagina Traffico.',
+    note: 'Le visite per canale e i pazienti riattivati effettivi si inseriscono, per ora, nella pagina Saturazione: traffico.',
   },
   preventivi: {
     quarterly: ['q_expected_value'],

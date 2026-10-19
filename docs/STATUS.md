@@ -543,6 +543,10 @@ decimali) per le righe CFMP e CFMP/saturazione della dashboard e per i campi "CF
 precedente" e "Target CFMP/saturazione" del nodo. I valori salvati non cambiano (0,7858
 era gia' un importo); il calcolo CFMP / % saturazione e' invariato.
 
+**Rinomina**: la voce "Traffico" (menu, titolo pagina, scheda del nodo) si chiama
+"Saturazione: traffico", come l'intestazione del foglio Aggregato Trimestrale. Il
+percorso resta `/traffico`.
+
 ### "Dati completi" a mesi nelle colonne (2026-10-19)
 
 Nelle pagine Traffico, Produzione, Preventivi e Cashflow la tabella "Dati completi" e'

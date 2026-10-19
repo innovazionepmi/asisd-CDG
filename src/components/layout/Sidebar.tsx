@@ -10,7 +10,7 @@ type NavItem = { to: string; label: string; icon: LucideIcon; end?: boolean }
 const NAV_ITEMS: NavItem[] = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard, end: true },
   { to: '/dashboard-analitica', label: 'Dashboard analitica', icon: TableProperties },
-  { to: '/traffico', label: 'Traffico', icon: Users },
+  { to: '/traffico', label: 'Saturazione: traffico', icon: Users },
   { to: '/preventivi', label: 'Preventivi', icon: ClipboardList },
   { to: '/produzione', label: 'Produzione', icon: Stethoscope },
   { to: '/saturazione', label: 'Saturazione', icon: Armchair },
