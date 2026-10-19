@@ -24,6 +24,7 @@ import type {
   ProductionTitolareMonthly,
   QuotesMonthly,
   SaturationMonthly,
+  StudioConfig,
   MonthlyVisit,
 } from './types'
 
@@ -73,6 +74,7 @@ let cashflowMonthly: CashflowMonthly[] | null = null
 let kpiPriorYearBaseline: KpiPriorYearBaseline[] | null = null
 let plPriorYearBaseline: PlPriorYearBaseline[] | null = null
 let manualValues: ManualValue[] | null = null
+let studioConfigs: StudioConfig[] | null = null
 let saturationMonthly: SaturationMonthly[] | null = null
 let kpiTargets: KpiTarget[] | null = null
 
@@ -85,7 +87,13 @@ function byYear<T extends { periodMonth: string } | { periodQuarter: string }>(r
 
 export const localFixtureProvider: DataProvider = {
   async getStudioConfig(year) {
-    return STUDIO_CONFIGS[year] ?? null
+    studioConfigs ??= loadTable('studioConfigs', Object.values(STUDIO_CONFIGS))
+    return studioConfigs.find((c) => c.year === year) ?? null
+  },
+  async upsertStudioConfig(config) {
+    studioConfigs ??= loadTable('studioConfigs', Object.values(STUDIO_CONFIGS))
+    studioConfigs = upsertBy(studioConfigs, config, (c) => c.year === config.year)
+    saveTable('studioConfigs', studioConfigs)
   },
 
   async listChannels() {

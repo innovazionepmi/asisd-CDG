@@ -531,6 +531,12 @@ vuota = elimina; i valori compaiono subito nella Dashboard analitica.
   (nell'Excel la riga "in corso prima visita" ha i segni invertiti); C.A.C./V.M.P.
   (calcolo e stato OK / NON OK) col margine (MDC%) dello stesso periodo; CFMP/
   saturazione = CFMP / % saturazione (budget dal target di studio_configs).
+- **Parametri studio modificabili**: nella scheda "Parametri studio" si inseriscono, per anno, numero
+  poltrone, minuti complessivi di apertura teorici e target CFMP/saturazione (stessa
+  riga di studio_configs: si salvano insieme per non perdere il target), oltre al CFMP
+  dell'anno precedente. Serve la migration `0011_studio_configs_owner_policies.sql`
+  (lettura per i membri, scrittura solo per il titolare). Poltrone e minuti sono
+  raccolti ma non ancora usati da nessun calcolo (come prima).
 - **Fase 2 (da fare)**: spostare nel nodo anche gli inserimenti gia' esistenti (visite,
   preventivi, produzione, cashflow, economics) e rendere le pagine di sola lettura.
   Gli inserimenti dell'anno 2025 del foglio Excel sono nei dati demo locali.

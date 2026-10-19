@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { buildAnalyticSheet, type SheetSection, type YearData } from './analyticSheet'
 import { dataProvider } from './provider'
-import type { Channel, KpiPriorYearBaseline, KpiTarget, ManualColKey, ManualValue, PlAccount, PlPriorYearBaseline, TreatmentCategory } from './types'
+import type { Channel, KpiPriorYearBaseline, KpiTarget, ManualColKey, ManualValue, PlAccount, PlPriorYearBaseline, StudioConfig, TreatmentCategory } from './types'
 
 async function loadYear(year: number): Promise<YearData> {
   const [visits, quotes, production, titolare, hygiene, saturation, cashflow, pl] = await Promise.all([
@@ -22,7 +22,7 @@ interface Loaded {
   categories: TreatmentCategory[]
   accounts: PlAccount[]
   targets: KpiTarget[]
-  cfmpTarget: number | null
+  config: StudioConfig | null
   manual: ManualValue[]
   kpiBaseline: KpiPriorYearBaseline[]
   afpBaseline: PlPriorYearBaseline[]
@@ -53,7 +53,7 @@ export function useAnalyticData(year: number) {
       loadYear(year - 1),
     ])
       .then(([channels, categories, accounts, targets, config, manual, kpiBaseline, afpBaseline, current, prior]) => {
-        if (!cancelled) setData({ channels, categories, accounts, targets, cfmpTarget: config?.cfmpTarget ?? null, manual, kpiBaseline, afpBaseline, current, prior })
+        if (!cancelled) setData({ channels, categories, accounts, targets, config, manual, kpiBaseline, afpBaseline, current, prior })
       })
       .catch((e) => {
         if (!cancelled) setError(e instanceof Error ? e.message : 'Errore nel caricamento dei dati.')
@@ -63,7 +63,7 @@ export function useAnalyticData(year: number) {
     }
   }, [year])
 
-  const sections: SheetSection[] = useMemo(() => (data ? buildAnalyticSheet({ year, ...data }) : []), [data, year])
+  const sections: SheetSection[] = useMemo(() => (data ? buildAnalyticSheet({ year, ...data, cfmpTarget: data.config?.cfmpTarget ?? null }) : []), [data, year])
 
   /** Salva (o, con null, elimina) un valore manuale e aggiorna subito la vista. */
   const saveManual = useCallback(
@@ -79,5 +79,21 @@ export function useAnalyticData(year: number) {
     [year],
   )
 
-  return { data, error, sections, manual: data?.manual ?? [], saveManual }
+  /** Salva i parametri di studio dell'anno (poltrone, minuti di apertura, target CFMP/saturazione). */
+  const saveConfig = useCallback(
+    async (patch: Partial<Omit<StudioConfig, 'year'>>) => {
+      const current = data?.config
+      const next: StudioConfig = {
+        year,
+        numChairs: patch.numChairs ?? current?.numChairs ?? 0,
+        theoreticalOpeningMinutes: patch.theoreticalOpeningMinutes !== undefined ? patch.theoreticalOpeningMinutes : (current?.theoreticalOpeningMinutes ?? null),
+        cfmpTarget: patch.cfmpTarget !== undefined ? patch.cfmpTarget : (current?.cfmpTarget ?? null),
+      }
+      await dataProvider.upsertStudioConfig(next)
+      setData((d) => (d ? { ...d, config: next } : d))
+    },
+    [data?.config, year],
+  )
+
+  return { data, error, sections, manual: data?.manual ?? [], saveManual, config: data?.config ?? null, saveConfig }
 }

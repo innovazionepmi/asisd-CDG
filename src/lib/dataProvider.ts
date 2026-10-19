@@ -24,6 +24,7 @@ import type {
 // Le pagine dell'app parlano solo con questa interfaccia.
 export interface DataProvider {
   getStudioConfig(year: number): Promise<StudioConfig | null>
+  upsertStudioConfig(config: StudioConfig): Promise<void>
 
   listChannels(): Promise<Channel[]>
   listTreatmentCategories(): Promise<TreatmentCategory[]>

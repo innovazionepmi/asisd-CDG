@@ -61,7 +61,7 @@ export function InserimentoDatiPage() {
   const { role } = useStudio()
   const [year, setYear] = useState(DEFAULT_YEAR)
   const [tab, setTab] = useState<TabId>('refs')
-  const { data, error, sections, manual, saveManual } = useAnalyticData(year)
+  const { data, error, sections, manual, saveManual, config, saveConfig } = useAnalyticData(year)
 
   const allowed = !isSupabaseConfigured || role === 'owner'
   const manualMap = useMemo(() => new Map(manual.map((m) => [`${m.rowKey}|${m.colKey}`, m.value])), [manual])
@@ -244,8 +244,39 @@ export function InserimentoDatiPage() {
           )}
 
           {tab === 'parametri' && (
-            <SectionCard title="Parametri studio" subtitle="Valori dell'anno precedente che servono ai calcoli della Dashboard analitica">
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <SectionCard title="Parametri studio" subtitle={`Parametri di struttura dell'anno ${year} e dato dell'anno precedente per i calcoli della Dashboard analitica`}>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <label className="block">
+                  <span className="mb-1 block text-xs font-semibold text-stone-600">Numero poltrone ({year})</span>
+                  <ManualField
+                    value={config?.numChairs ?? null}
+                    format="count"
+                    label={`Numero poltrone ${year}`}
+                    onCommit={async (v) => {
+                      if (v == null) throw new Error('Il numero di poltrone è obbligatorio')
+                      await saveConfig({ numChairs: v })
+                    }}
+                  />
+                </label>
+                <label className="block">
+                  <span className="mb-1 block text-xs font-semibold text-stone-600">Minuti complessivi di apertura teorici ({year})</span>
+                  <ManualField
+                    value={config?.theoreticalOpeningMinutes ?? null}
+                    format="count"
+                    label={`Minuti di apertura teorici ${year}`}
+                    onCommit={(v) => saveConfig({ theoreticalOpeningMinutes: v })}
+                  />
+                </label>
+                <label className="block">
+                  <span className="mb-1 block text-xs font-semibold text-stone-600">Target CFMP/saturazione ({year})</span>
+                  <ManualField
+                    value={config?.cfmpTarget ?? null}
+                    format="percent"
+                    label={`Target CFMP/saturazione ${year}`}
+                    onCommit={(v) => saveConfig({ cfmpTarget: v })}
+                  />
+                  <span className="mt-1 block text-[11px] text-stone-500">È il budget della riga CFMP/saturazione (100 = CFMP uguale alla saturazione).</span>
+                </label>
                 <label className="block">
                   <span className="mb-1 block text-xs font-semibold text-stone-600">CFMP dell'anno precedente ({year - 1})</span>
                   {field('cfmp', 'afp', 'percent', `CFMP ${year - 1}`)}

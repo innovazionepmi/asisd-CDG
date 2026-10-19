@@ -70,6 +70,21 @@ export const supabaseProvider: DataProvider = {
     }
     return config
   },
+  async upsertStudioConfig(config) {
+    const db = requireClient()
+    const studioId = requireStudioId()
+    const { error } = await db.from('studio_configs').upsert(
+      {
+        studio_id: studioId,
+        year: config.year,
+        num_chairs: config.numChairs,
+        theoretical_opening_minutes: config.theoreticalOpeningMinutes,
+        cfmp_target: config.cfmpTarget,
+      },
+      { onConflict: 'studio_id,year' },
+    )
+    if (error) throw error
+  },
 
   async listChannels() {
     const db = requireClient()
