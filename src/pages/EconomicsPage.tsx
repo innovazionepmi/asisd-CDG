@@ -1,16 +1,48 @@
 import { useEffect, useMemo, useState } from 'react'
 import { DonutChart } from '../components/charts/DonutChart'
 import { TrendLineChart } from '../components/charts/TrendLineChart'
+import { PlStatementTable } from '../components/economics/PlStatementTable'
 import { PageHeader } from '../components/layout/PageHeader'
 import { KpiCard } from '../components/ui/KpiCard'
 import { QuarterSelect, YearSelect } from '../components/ui/PeriodSelect'
 import { NumberField } from '../components/ui/NumberField'
 import { SectionCard } from '../components/ui/SectionCard'
 import { deviationPct, formatEur, formatPct, safeDiv, sum, trendOf } from '../lib/calc'
-import { allQuartersOfYear, quarterKey, quarterLabel } from '../lib/periods'
+import { allQuartersOfYear, quarterKey } from '../lib/periods'
+import { afpTotals, resolveAfp, type PlRowKind } from '../lib/plStatement'
 import { dataProvider } from '../lib/provider'
 import { DEFAULT_YEAR, SELECTABLE_YEARS } from '../lib/years'
-import type { KpiPriorYearBaseline, PlAccount, PlQuarterly } from '../lib/types'
+import type { KpiPriorYearBaseline, PlAccount, PlPriorYearBaseline, PlQuarterly } from '../lib/types'
+
+function AccountFields({
+  accounts,
+  values,
+  onChange,
+}: {
+  accounts: PlAccount[]
+  values: Record<string, number>
+  onChange: (accountId: string, v: number) => void
+}) {
+  const groups: { title: string; items: PlAccount[] }[] = [
+    { title: 'Ricavi', items: accounts.filter((a) => a.accountType === 'revenue') },
+    { title: 'Costi variabili', items: accounts.filter((a) => a.accountType === 'variable_cost') },
+    { title: 'Costi fissi', items: accounts.filter((a) => a.accountType === 'fixed_cost') },
+  ]
+  return (
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+      {groups.map((g) => (
+        <div key={g.title}>
+          <p className="mb-3 text-sm font-semibold text-navy-900">{g.title}</p>
+          <div className="space-y-3">
+            {g.items.map((a) => (
+              <NumberField key={a.id} label={a.name} value={values[a.id] ?? 0} onChange={(v) => onChange(a.id, v)} prefix="€" />
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
 
 export function EconomicsPage() {
   const [year, setYear] = useState(DEFAULT_YEAR)
@@ -19,26 +51,25 @@ export function EconomicsPage() {
   const [pl, setPl] = useState<PlQuarterly[]>([])
   const [priorPl, setPriorPl] = useState<PlQuarterly[]>([])
   const [priorBaseline, setPriorBaseline] = useState<KpiPriorYearBaseline[]>([])
+  const [afpBaseline, setAfpBaseline] = useState<PlPriorYearBaseline[]>([])
   const [draft, setDraft] = useState<Record<string, number>>({})
-  const [baselineDraft, setBaselineDraft] = useState({ revenue: 0, mol: 0 })
+  const [afpDraft, setAfpDraft] = useState<Record<string, number>>({})
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved'>('idle')
   const [baselineSaveState, setBaselineSaveState] = useState<'idle' | 'saving' | 'saved'>('idle')
 
   async function reload() {
-    const [acc, quarterly, priorQuarterly, baseline] = await Promise.all([
+    const [acc, quarterly, priorQuarterly, baseline, perAccountBaseline] = await Promise.all([
       dataProvider.listPlAccounts(),
       dataProvider.getPlQuarterly(year),
       dataProvider.getPlQuarterly(year - 1),
       dataProvider.getKpiPriorYearBaseline(year - 1),
+      dataProvider.getPlPriorYearBaseline(year - 1),
     ])
     setAccounts(acc)
     setPl(quarterly)
     setPriorPl(priorQuarterly)
     setPriorBaseline(baseline)
-    setBaselineDraft({
-      revenue: baseline.find((b) => b.metricKey === 'economics.revenue')?.annualValue ?? 0,
-      mol: baseline.find((b) => b.metricKey === 'economics.mol')?.annualValue ?? 0,
-    })
+    setAfpBaseline(perAccountBaseline)
   }
 
   useEffect(() => {
@@ -55,6 +86,14 @@ export function EconomicsPage() {
     setDraft(next)
   }, [accounts, pl, year, quarter])
 
+  useEffect(() => {
+    const next: Record<string, number> = {}
+    for (const acc of accounts) {
+      next[acc.id] = afpBaseline.find((b) => b.accountId === acc.id)?.annualValue ?? 0
+    }
+    setAfpDraft(next)
+  }, [accounts, afpBaseline])
+
   async function save() {
     setSaveState('saving')
     const period = quarterKey(year, quarter)
@@ -66,14 +105,24 @@ export function EconomicsPage() {
 
   async function saveBaseline() {
     setBaselineSaveState('saving')
+    const totals = afpTotals(afpDraft, accounts)
     await Promise.all([
-      dataProvider.upsertKpiPriorYearBaseline({ fiscalYear: year - 1, metricKey: 'economics.revenue', annualValue: baselineDraft.revenue }),
-      dataProvider.upsertKpiPriorYearBaseline({ fiscalYear: year - 1, metricKey: 'economics.mol', annualValue: baselineDraft.mol }),
+      ...accounts.map((acc) =>
+        dataProvider.upsertPlPriorYearBaseline({ fiscalYear: year - 1, accountId: acc.id, annualValue: afpDraft[acc.id] ?? 0 }),
+      ),
+      // i due totali restano anche in kpi_prior_year_baseline: li legge la Dashboard
+      dataProvider.upsertKpiPriorYearBaseline({ fiscalYear: year - 1, metricKey: 'economics.revenue', annualValue: totals.revenue }),
+      dataProvider.upsertKpiPriorYearBaseline({ fiscalYear: year - 1, metricKey: 'economics.mol', annualValue: totals.mol }),
     ])
     await reload()
     setBaselineSaveState('saved')
     setTimeout(() => setBaselineSaveState('idle'), 1500)
   }
+
+  const afp = useMemo(
+    () => resolveAfp({ year, accounts, priorPl, afpBaseline, kpiBaseline: priorBaseline }),
+    [year, accounts, priorPl, afpBaseline, priorBaseline],
+  )
 
   const view = useMemo(() => {
     const byType = (rows: PlQuarterly[], type: PlAccount['accountType']) =>
@@ -85,15 +134,10 @@ export function EconomicsPage() {
     const mdc = revenue - variableCosts
     const mol = mdc - fixedCosts
 
-    const priorHasData = priorPl.length > 0
-    const revenuePriorBaseline = priorBaseline.find((b) => b.metricKey === 'economics.revenue')?.annualValue ?? null
-    const molPriorBaseline = priorBaseline.find((b) => b.metricKey === 'economics.mol')?.annualValue ?? null
-
-    const revenuePrior = priorHasData ? byType(priorPl, 'revenue') : revenuePriorBaseline
-    const molPrior = priorHasData
-      ? byType(priorPl, 'revenue') - byType(priorPl, 'variable_cost') - byType(priorPl, 'fixed_cost')
-      : molPriorBaseline
-    const isEstimated = !priorHasData && (revenuePriorBaseline != null || molPriorBaseline != null)
+    const afpKnown = (kind: PlRowKind) => (afp.column && (!afp.column.knownKinds || afp.column.knownKinds.includes(kind)) ? afp.column.computed : null)
+    const revenuePrior = afpKnown('revenue')?.revenue ?? null
+    const molPrior = afpKnown('mol')?.mol ?? null
+    const isEstimated = afp.source === 'baseline' || afp.source === 'totals'
 
     const costBreakdown = accounts
       .filter((a) => a.accountType !== 'revenue')
@@ -107,23 +151,13 @@ export function EconomicsPage() {
       return { label: `T${i + 1}`, ricavi: rev, mdc: rev - vc, mol: rev - vc - fc }
     })
 
-    const table = allQuartersOfYear(year).map((period, i) => {
-      const qRows = pl.filter((r) => r.periodQuarter === period)
-      const rev = byType(qRows, 'revenue')
-      const vc = byType(qRows, 'variable_cost')
-      const fc = byType(qRows, 'fixed_cost')
-      return { label: quarterLabel(i + 1), revenue: rev, variableCosts: vc, mdc: rev - vc, fixedCosts: fc, mol: rev - vc - fc, molPct: safeDiv(rev - vc - fc, rev) }
-    })
+    return { revenue, mdc, mol, revenuePrior, molPrior, isEstimated, costBreakdown, trend }
+  }, [pl, accounts, year, afp])
 
-    return { revenue, variableCosts, fixedCosts, mdc, mol, revenuePrior, molPrior, isEstimated, costBreakdown, trend, table }
-  }, [pl, priorPl, priorBaseline, accounts, year])
-
-  const revenueAccounts = accounts.filter((a) => a.accountType === 'revenue')
-  const variableAccounts = accounts.filter((a) => a.accountType === 'variable_cost')
-  const fixedAccounts = accounts.filter((a) => a.accountType === 'fixed_cost')
-  const draftRevenue = sum(revenueAccounts.map((a) => draft[a.id] ?? 0))
-  const draftVariable = sum(variableAccounts.map((a) => draft[a.id] ?? 0))
-  const draftFixed = sum(fixedAccounts.map((a) => draft[a.id] ?? 0))
+  const draftRevenue = sum(accounts.filter((a) => a.accountType === 'revenue').map((a) => draft[a.id] ?? 0))
+  const draftVariable = sum(accounts.filter((a) => a.accountType === 'variable_cost').map((a) => draft[a.id] ?? 0))
+  const draftFixed = sum(accounts.filter((a) => a.accountType === 'fixed_cost').map((a) => draft[a.id] ?? 0))
+  const afpDraftTotals = afpTotals(afpDraft, accounts)
 
   return (
     <div>
@@ -152,6 +186,15 @@ export function EconomicsPage() {
         />
       </div>
 
+      <div className="mb-6">
+        <SectionCard
+          title="Conto economico"
+          subtitle={`Anno ${year} — ricavi, costi variabili, MDC, costi fissi e MOL, con confronto vs AFP ${year - 1}`}
+        >
+          <PlStatementTable accounts={accounts} pl={pl} afp={afp} year={year} />
+        </SectionCard>
+      </div>
+
       <div className="mb-6 grid grid-cols-1 gap-5 lg:grid-cols-2">
         <SectionCard title="Composizione costi" subtitle={`Anno ${year}`}>
           <DonutChart data={view.costBreakdown} unit="currency" />
@@ -174,32 +217,7 @@ export function EconomicsPage() {
         subtitle="Seleziona il trimestre e aggiorna le voci di conto economico"
         actions={<QuarterSelect quarter={quarter} onChange={setQuarter} />}
       >
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-          <div>
-            <p className="mb-3 text-sm font-semibold text-navy-900">Ricavi</p>
-            <div className="space-y-3">
-              {revenueAccounts.map((a) => (
-                <NumberField key={a.id} label={a.name} value={draft[a.id] ?? 0} onChange={(v) => setDraft((d) => ({ ...d, [a.id]: v }))} prefix="€" />
-              ))}
-            </div>
-          </div>
-          <div>
-            <p className="mb-3 text-sm font-semibold text-navy-900">Costi variabili</p>
-            <div className="space-y-3">
-              {variableAccounts.map((a) => (
-                <NumberField key={a.id} label={a.name} value={draft[a.id] ?? 0} onChange={(v) => setDraft((d) => ({ ...d, [a.id]: v }))} prefix="€" />
-              ))}
-            </div>
-          </div>
-          <div>
-            <p className="mb-3 text-sm font-semibold text-navy-900">Costi fissi</p>
-            <div className="space-y-3">
-              {fixedAccounts.map((a) => (
-                <NumberField key={a.id} label={a.name} value={draft[a.id] ?? 0} onChange={(v) => setDraft((d) => ({ ...d, [a.id]: v }))} prefix="€" />
-              ))}
-            </div>
-          </div>
-        </div>
+        <AccountFields accounts={accounts} values={draft} onChange={(id, v) => setDraft((d) => ({ ...d, [id]: v }))} />
 
         <div className="mt-5 flex flex-wrap items-center gap-4 rounded-card bg-stone-100 px-4 py-3 text-sm">
           <span className="text-stone-500">
@@ -219,59 +237,34 @@ export function EconomicsPage() {
         </button>
       </SectionCard>
 
-      <SectionCard
-        title={`Valore AFP ${year - 1}`}
-        subtitle="Da usare quando il dettaglio trimestrale reale dell'anno precedente non è (ancora) nel sistema — sostituisce la colonna 'Totale AFP' dell'Excel"
-      >
-        {priorPl.length > 0 && (
-          <p className="mb-4 rounded-card bg-success-100 px-3 py-2 text-xs text-success-600">
-            Per il {year - 1} sono già presenti dati trimestrali reali: il confronto "vs anno precedente" li usa già,
-            questo valore resta come riserva solo per gli anni senza dettaglio reale.
-          </p>
-        )}
-        <div className="flex flex-wrap items-end gap-4">
-          <NumberField label="Ricavi annui" value={baselineDraft.revenue} onChange={(v) => setBaselineDraft((d) => ({ ...d, revenue: v }))} prefix="€" />
-          <NumberField label="MOL annuo" value={baselineDraft.mol} onChange={(v) => setBaselineDraft((d) => ({ ...d, mol: v }))} prefix="€" />
+      <div className="mt-6">
+        <SectionCard
+          title={`Valore AFP ${year - 1}`}
+          subtitle="Totale annuo per voce dell'anno precedente — sostituisce la colonna 'Anno Fiscale Precedente' dell'Excel. Serve quando il dettaglio trimestrale reale di quell'anno non è (ancora) nel sistema."
+        >
+          {priorPl.length > 0 && (
+            <p className="mb-4 rounded-card bg-success-100 px-3 py-2 text-xs text-success-600">
+              Per il {year - 1} sono già presenti dati trimestrali reali: il confronto "vs AFP" li usa già, questi valori restano come riserva solo per
+              gli anni senza dettaglio reale.
+            </p>
+          )}
+          <AccountFields accounts={accounts} values={afpDraft} onChange={(id, v) => setAfpDraft((d) => ({ ...d, [id]: v }))} />
+
+          <div className="mt-5 flex flex-wrap items-center gap-4 rounded-card bg-stone-100 px-4 py-3 text-sm">
+            <span className="text-stone-500">
+              MOL AFP anteprima: <span className="font-semibold text-navy-900">{formatEur(afpDraftTotals.mol)}</span>
+            </span>
+          </div>
+
           <button
             onClick={saveBaseline}
             disabled={baselineSaveState === 'saving'}
-            className="rounded-card border border-stone-300 bg-white px-4 py-2 text-sm font-medium text-navy-700 transition-colors hover:bg-navy-50 disabled:opacity-60"
+            className="mt-4 rounded-card border border-stone-300 bg-white px-4 py-2 text-sm font-medium text-navy-700 transition-colors hover:bg-navy-50 disabled:opacity-60"
           >
             {baselineSaveState === 'saving' ? 'Salvataggio…' : baselineSaveState === 'saved' ? 'Salvato ✓' : 'Salva valore AFP'}
           </button>
-        </div>
-      </SectionCard>
-
-      <SectionCard title="Dati completi" subtitle={`Tutti i trimestri dell'anno ${year}`}>
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead>
-              <tr className="border-b border-stone-300 text-xs uppercase tracking-wide text-stone-500">
-                <th className="py-2 pr-4">Trimestre</th>
-                <th className="py-2 pr-4 text-right">Ricavi</th>
-                <th className="py-2 pr-4 text-right">Costi variabili</th>
-                <th className="py-2 pr-4 text-right">MDC</th>
-                <th className="py-2 pr-4 text-right">Costi fissi</th>
-                <th className="py-2 pr-4 text-right">MOL</th>
-                <th className="py-2 text-right">% MOL</th>
-              </tr>
-            </thead>
-            <tbody>
-              {view.table.map((row) => (
-                <tr key={row.label} className="border-b border-stone-100 last:border-0">
-                  <td className="py-1.5 pr-4 text-navy-700">{row.label}</td>
-                  <td className="py-1.5 pr-4 text-right text-stone-600">{formatEur(row.revenue)}</td>
-                  <td className="py-1.5 pr-4 text-right text-stone-600">{formatEur(row.variableCosts)}</td>
-                  <td className="py-1.5 pr-4 text-right text-stone-600">{formatEur(row.mdc)}</td>
-                  <td className="py-1.5 pr-4 text-right text-stone-600">{formatEur(row.fixedCosts)}</td>
-                  <td className="py-1.5 pr-4 text-right font-medium text-navy-900">{formatEur(row.mol)}</td>
-                  <td className="py-1.5 text-right text-stone-600">{formatPct(row.molPct)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </SectionCard>
+        </SectionCard>
+      </div>
     </div>
   )
 }

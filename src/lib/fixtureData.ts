@@ -7,6 +7,7 @@ import type {
   KpiPriorYearBaseline,
   KpiTarget,
   PlAccount,
+  PlPriorYearBaseline,
   PlQuarterly,
   ProductionMonthly,
   ProductionTitolareMonthly,
@@ -73,6 +74,30 @@ export const KPI_PRIOR_YEAR_BASELINE: KpiPriorYearBaseline[] = [
   { fiscalYear: 2024, metricKey: 'economics.revenue', annualValue: 1_391_143 },
   { fiscalYear: 2024, metricKey: 'economics.mol', annualValue: 233_585 },
 ]
+
+// AFP 2024 per voce, colonna "Anno Fiscale Precedente" del foglio Co.Ge
+// Trimestrale (ricavi 1.391.143 - costi variabili 790.915 - fissi 366.643 =
+// MOL 233.585, coerente con KPI_PRIOR_YEAR_BASELINE qui sopra).
+const PL_AFP_2024: Record<string, number> = {
+  'pl-ricavi': 1_391_143,
+  'pl-materiali': 181_687,
+  'pl-energia': 13_429,
+  'pl-collaboratori': 139_188,
+  'pl-titolare': 300_000,
+  'pl-laboratorio': 149_043,
+  'pl-finanziamenti': 7_568,
+  'pl-personale': 169_508,
+  'pl-immobili': 16_128,
+  'pl-attrezzature': 22_318,
+  'pl-gestionali': 106_594,
+  'pl-marketing': 52_095,
+}
+
+export const PL_PRIOR_YEAR_BASELINE: PlPriorYearBaseline[] = Object.entries(PL_AFP_2024).map(([accountId, annualValue]) => ({
+  fiscalYear: 2024,
+  accountId,
+  annualValue,
+}))
 
 function grow(values: number[], factor: number): number[] {
   return values.map((v) => Math.round(v * factor * 100) / 100)

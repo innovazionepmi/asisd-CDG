@@ -85,6 +85,12 @@ export interface CashflowMonthly {
   thirdPartyPayerReceivables: number
 }
 
+export interface PlPriorYearBaseline {
+  fiscalYear: number
+  accountId: string
+  annualValue: number
+}
+
 export interface KpiPriorYearBaseline {
   fiscalYear: number
   metricKey: string

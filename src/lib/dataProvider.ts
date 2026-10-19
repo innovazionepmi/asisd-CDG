@@ -5,6 +5,7 @@ import type {
   KpiPriorYearBaseline,
   KpiTarget,
   PlAccount,
+  PlPriorYearBaseline,
   PlQuarterly,
   ProductionMonthly,
   ProductionTitolareMonthly,
@@ -47,6 +48,9 @@ export interface DataProvider {
 
   getCashflowMonthly(year: number): Promise<CashflowMonthly[]>
   upsertCashflowMonthly(row: CashflowMonthly): Promise<void>
+
+  getPlPriorYearBaseline(year: number): Promise<PlPriorYearBaseline[]>
+  upsertPlPriorYearBaseline(row: PlPriorYearBaseline): Promise<void>
 
   getKpiPriorYearBaseline(year: number): Promise<KpiPriorYearBaseline[]>
   upsertKpiPriorYearBaseline(row: KpiPriorYearBaseline): Promise<void>

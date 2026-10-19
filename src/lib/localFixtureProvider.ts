@@ -5,6 +5,7 @@ import {
   KPI_PRIOR_YEAR_BASELINE,
   KPI_TARGETS,
   PL_ACCOUNTS,
+  PL_PRIOR_YEAR_BASELINE,
   STUDIO_CONFIGS,
   TREATMENT_CATEGORIES,
   type FixtureBundle,
@@ -14,6 +15,7 @@ import type {
   HygieneSessionsMonthly,
   KpiPriorYearBaseline,
   KpiTarget,
+  PlPriorYearBaseline,
   PlQuarterly,
   ProductionMonthly,
   ProductionTitolareMonthly,
@@ -66,6 +68,7 @@ let hygieneSessionsMonthly: HygieneSessionsMonthly[] | null = null
 let plQuarterly: PlQuarterly[] | null = null
 let cashflowMonthly: CashflowMonthly[] | null = null
 let kpiPriorYearBaseline: KpiPriorYearBaseline[] | null = null
+let plPriorYearBaseline: PlPriorYearBaseline[] | null = null
 let saturationMonthly: SaturationMonthly[] | null = null
 let kpiTargets: KpiTarget[] | null = null
 
@@ -173,6 +176,16 @@ export const localFixtureProvider: DataProvider = {
     cashflowMonthly ??= loadTable('cashflowMonthly', seedFor((b) => b.cashflowMonthly))
     cashflowMonthly = upsertBy(cashflowMonthly, row, (r) => r.periodMonth === row.periodMonth)
     saveTable('cashflowMonthly', cashflowMonthly)
+  },
+
+  async getPlPriorYearBaseline(year) {
+    plPriorYearBaseline ??= loadTable('plPriorYearBaseline', PL_PRIOR_YEAR_BASELINE)
+    return plPriorYearBaseline.filter((b) => b.fiscalYear === year)
+  },
+  async upsertPlPriorYearBaseline(row) {
+    plPriorYearBaseline ??= loadTable('plPriorYearBaseline', PL_PRIOR_YEAR_BASELINE)
+    plPriorYearBaseline = upsertBy(plPriorYearBaseline, row, (r) => r.fiscalYear === row.fiscalYear && r.accountId === row.accountId)
+    saveTable('plPriorYearBaseline', plPriorYearBaseline)
   },
 
   async getKpiPriorYearBaseline(year) {

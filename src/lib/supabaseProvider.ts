@@ -10,6 +10,7 @@ import type {
   KpiTarget,
   PlAccount,
   PlAccountType,
+  PlPriorYearBaseline,
   PlQuarterly,
   ProductionMonthly,
   ProductionTitolareMonthly,
@@ -325,6 +326,27 @@ export const supabaseProvider: DataProvider = {
         third_party_payer_receivables: row.thirdPartyPayerReceivables,
       },
       { onConflict: 'studio_id,period_month' },
+    )
+    if (error) throw error
+  },
+
+  async getPlPriorYearBaseline(year) {
+    const db = requireClient()
+    const studioId = requireStudioId()
+    const { data, error } = await db
+      .from('pl_prior_year_baseline')
+      .select('fiscal_year, account_id, annual_value')
+      .eq('studio_id', studioId)
+      .eq('fiscal_year', year)
+    if (error) throw error
+    return (data ?? []).map((r): PlPriorYearBaseline => ({ fiscalYear: r.fiscal_year, accountId: r.account_id, annualValue: r.annual_value }))
+  },
+  async upsertPlPriorYearBaseline(row) {
+    const db = requireClient()
+    const studioId = requireStudioId()
+    const { error } = await db.from('pl_prior_year_baseline').upsert(
+      { studio_id: studioId, fiscal_year: row.fiscalYear, account_id: row.accountId, annual_value: row.annualValue },
+      { onConflict: 'studio_id,fiscal_year,account_id' },
     )
     if (error) throw error
   },

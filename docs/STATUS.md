@@ -350,6 +350,51 @@ dashboard B2B).
   Saturazione, Cashflow, Login, Admin — tutto coerente con la nuova
   identità di brand, nessuna regressione funzionale.
 
+## Economics ribaltata sul modello "Co.Ge Trimestrale" (2026-10-19, branch staging)
+
+Dopo la call con Andrea Grassi: la pagina Economics replica ora la logica
+del tab "Co.Ge Trimestrale" del file Excel (rilettura completa del foglio,
+formule incluse, prima di scrivere codice).
+
+- **Tabella ribaltata**: periodi nelle colonne, voci nelle righe, con tutte
+  le sotto-voci (6 costi variabili + 5 fissi) tra Ricavi, Costi variabili
+  totale, MDC, Costi fissi totale, MOL. Tre viste in un solo componente con
+  tab: *Cumulato da inizio anno* (al 31/03, 30/06, 30/09, 31/12), *Per
+  trimestre*, *Previsione a fine anno*; colonna AFP sempre a sinistra.
+  `src/lib/plStatement.ts` (calcolo puro) + `src/components/economics/
+  PlStatementTable.tsx` (UI). Verificato contro i numeri dell'Excel in tutte
+  e tre le viste (es. MOL cumulato anno 507.423 · +8,00 pp; previsione dal
+  1° trim. 2.014.680 · +44,8%).
+- **Formule replicate dall'Excel**: in ogni cella importo + % di incidenza
+  sul ricavo del periodo + scostamento vs AFP. Scostamento = differenza di
+  incidenza in punti percentuali (pp) per tutte le voci; solo per i Ricavi,
+  e solo sui periodi di 12 mesi (cumulato a fine anno, previsioni), è la
+  variazione % in euro. Previsione = proiezione lineare del cumulato (dal
+  1° trim. x4, dal 2° x2, dal 3° x4/3): non tiene conto della stagionalità,
+  come nel file originale.
+- **Meno Excel**: una cella per periodo invece di tre colonne (importo con
+  sotto % e chip di scostamento), colori col verso giusto (costi sotto l'AFP
+  = verde, ricavi/MDC/MOL sopra = verde), gruppi costi comprimibili (default
+  espansi, tutti i dati presenti), colonna voci fissa nello scroll
+  orizzontale, colonne ridotte su mobile. I trimestri senza dati mostrano
+  "Da inserire".
+- **AFP per voce (nuova migration `0009_pl_prior_year_baseline.sql`, da
+  applicare su Supabase)**: nell'Excel la colonna AFP ha un valore per ogni
+  voce, ma `kpi_prior_year_baseline` teneva solo Ricavi e MOL. Nuova tabella
+  `pl_prior_year_baseline` (studio, anno, voce, valore). Ordine di
+  risoluzione AFP: dati trimestrali reali dell'anno precedente -> valori per
+  voce inseriti a mano -> (riserva storica) soli totali Ricavi/MOL, nel
+  qual caso la tabella avvisa che gli scostamenti per riga richiedono il
+  dettaglio. Il form "Valore AFP" ora è per voce e a ogni salvataggio
+  riscrive anche i due totali in `kpi_prior_year_baseline` (la Dashboard e
+  le viste SQL continuano a leggere quelli).
+- La vecchia tabella "Dati completi" (solo macro-voci per trimestre) è
+  stata sostituita; ordine pagina: KPI, Conto economico, grafici,
+  inserimento trimestre, Valore AFP.
+- Script SQL per popolare l'AFP 2024 per voce sullo studio di test
+  (`2abe09f6-...`) consegnato a parte, non committato (stessa prassi dei
+  seed demo).
+
 ## Prossimo passo
 
 1. **Su Supabase**: whitelistare i redirect URL per reset password/inviti
