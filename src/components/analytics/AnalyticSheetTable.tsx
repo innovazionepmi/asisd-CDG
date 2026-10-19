@@ -1,7 +1,7 @@
 import clsx from 'clsx'
 import { ChevronDown, ChevronRight } from 'lucide-react'
 import { Fragment, useRef, useState } from 'react'
-import { formatEur, formatPct } from '../../lib/calc'
+import { eurPrecise, formatEur, formatPct } from '../../lib/calc'
 import { COL_GROUP, type ColGroup, type SheetCell, type SheetRow, type SheetSection, type Tone } from '../../lib/analyticSheet'
 
 const decimal = new Intl.NumberFormat('it-IT', { maximumFractionDigits: 1 })
@@ -27,7 +27,8 @@ function formatCell(cell: SheetCell): string {
   if (v == null) return '—'
   if (cell.dev === 'pp') return `${signedDecimal.format(v * 100)}%`
   if (cell.dev === 'rel') return `${signedDecimal.format(v * 100)}%`
-  if (cell.dev === 'abs') return cell.fmt === 'currency' ? `${signedInt.format(v)} €` : signedDecimal.format(v)
+  if (cell.dev === 'abs') return cell.fmt === 'currency2' ? `${v > 0 ? '+' : ''}${eurPrecise.format(v)}` : cell.fmt === 'currency' ? `${signedInt.format(v)} €` : signedDecimal.format(v)
+  if (cell.fmt === 'currency2') return eurPrecise.format(v)
   if (cell.fmt === 'currency') return formatEur(v)
   if (cell.fmt === 'percent') return formatPct(v)
   return decimal.format(v)

@@ -53,7 +53,7 @@ export type ColGroup = 'afp' | 'year' | 'budget' | 'q0' | 'q1' | 'q2' | 'q3'
 export const COL_GROUP: ColGroup[] = ['afp', 'afp', 'year', 'year', 'budget', 'budget', ...(['q0', 'q1', 'q2', 'q3'] as ColGroup[]).flatMap((g) => [g, g, g, g])]
 const qBase = (q: number) => 6 + q * 4
 
-export type CellFmt = 'count' | 'currency' | 'percent' | 'text'
+export type CellFmt = 'count' | 'currency' | 'currency2' | 'percent' | 'text'
 export type DevKind = 'abs' | 'pp' | 'rel'
 export type CellKind = 'calc' | 'na' | 'blank'
 export type Tone = 'higher' | 'lower' | 'neutral'
@@ -85,7 +85,7 @@ export interface SheetRow {
   tone: Tone
   emphasis?: 'total' | 'mdc'
   cells: SheetCell[]
-  ref?: { afp: RefInfo; budget: RefInfo; format: 'count' | 'currency' | 'percent'; rowKey?: string; monthlyBudget?: string; manualQ?: boolean; manualYear?: boolean; cfmp?: boolean }
+  ref?: { afp: RefInfo; budget: RefInfo; format: 'count' | 'currency' | 'currency2' | 'percent'; rowKey?: string; monthlyBudget?: string; manualQ?: boolean; manualYear?: boolean; cfmp?: boolean }
 }
 
 export interface HeaderCol {
@@ -133,7 +133,7 @@ export interface SheetInput {
 
 type Series = (number | null)[]
 type Agg = 'sum' | 'avg' | 'last'
-type Fmt = 'count' | 'currency' | 'percent'
+type Fmt = 'count' | 'currency' | 'currency2' | 'percent'
 type ManualFn = (rowKey: string, col: ManualColKey) => number | null
 
 const nonNull = (v: number | null | undefined): v is number => v != null
@@ -597,7 +597,7 @@ function buildSectionDefs(input: SheetInput): SectionDef[] {
       key: 'cfmp_sat',
       label: 'CFMP/saturazione',
       xl: 69,
-      format: 'percent',
+      format: 'currency2',
       tone: 'neutral',
       agg: 'avg',
       qfn: (c) => [0, 1, 2, 3].map((i) => {
@@ -612,7 +612,7 @@ function buildSectionDefs(input: SheetInput): SectionDef[] {
       budgetDerive: () => input.cfmpTarget,
     }),
     S({ key: 'saturation', label: '% Saturazione Progressiva', xl: 70, format: 'percent', tone: 'higher', agg: 'avg', monthly: saturationSeries, budgetKey: 'production.saturation_pct' }),
-    S({ key: 'cfmp', label: 'CFMP', xl: 71, format: 'percent', tone: 'neutral', agg: 'last', cfmp: true }),
+    S({ key: 'cfmp', label: 'CFMP', xl: 71, format: 'currency2', tone: 'neutral', agg: 'last', cfmp: true }),
   ]
 
   const creditComp = (key: string, xl: number, label: string, pctLabel: string, field: CashField, tone: Tone, budgetKey?: string): Spec[] => [

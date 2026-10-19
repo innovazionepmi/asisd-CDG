@@ -1,7 +1,7 @@
 import clsx from 'clsx'
 import { useEffect, useState } from 'react'
 
-type Format = 'count' | 'currency' | 'percent'
+type Format = 'count' | 'currency' | 'currency2' | 'percent'
 
 const toText = (value: number | null, format: Format) => {
   if (value == null) return ''
@@ -74,7 +74,7 @@ export function ManualField({
         disabled && 'bg-stone-100',
       )}
     >
-      {format === 'currency' && <span className="pl-2 text-stone-500">€</span>}
+      {(format === 'currency' || format === 'currency2') && <span className="pl-2 text-stone-500">€</span>}
       <input
         type="text"
         inputMode="decimal"

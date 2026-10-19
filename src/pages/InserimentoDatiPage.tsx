@@ -4,7 +4,7 @@ import { PageHeader } from '../components/layout/PageHeader'
 import { ManualField } from '../components/ui/ManualField'
 import { YearSelect } from '../components/ui/PeriodSelect'
 import { SectionCard } from '../components/ui/SectionCard'
-import { formatEur, formatPct } from '../lib/calc'
+import { eurPrecise, formatEur, formatPct } from '../lib/calc'
 import type { RefSource, SheetRow } from '../lib/analyticSheet'
 import { useStudio } from '../lib/studio/StudioContext'
 import { isSupabaseConfigured } from '../lib/supabaseClient'
@@ -100,8 +100,8 @@ const SOURCE_TAG: Record<Exclude<RefSource, null | 'manual'>, string> = {
 }
 
 const decimal = new Intl.NumberFormat('it-IT', { maximumFractionDigits: 1 })
-const show = (v: number | null, format: 'count' | 'currency' | 'percent') =>
-  v == null ? '—' : format === 'currency' ? formatEur(v) : format === 'percent' ? formatPct(v) : decimal.format(v)
+const show = (v: number | null, format: 'count' | 'currency' | 'currency2' | 'percent') =>
+  v == null ? '—' : format === 'currency2' ? eurPrecise.format(v) : format === 'currency' ? formatEur(v) : format === 'percent' ? formatPct(v) : decimal.format(v)
 
 export function InserimentoDatiPage() {
   const { role } = useStudio()
@@ -124,7 +124,7 @@ export function InserimentoDatiPage() {
     )
   }
 
-  const field = (rowKey: string, col: ManualColKey, format: 'count' | 'currency' | 'percent', label: string, placeholder?: string, disabled?: boolean) => (
+  const field = (rowKey: string, col: ManualColKey, format: 'count' | 'currency' | 'currency2' | 'percent', label: string, placeholder?: string, disabled?: boolean) => (
     <ManualField
       key={`${rowKey}-${col}`}
       value={getManual(rowKey, col)}
@@ -377,16 +377,16 @@ export function InserimentoDatiPage() {
                   <span className="mb-1 block text-xs font-semibold text-stone-600">Target CFMP/saturazione ({year})</span>
                   <ManualField
                     value={config?.cfmpTarget ?? null}
-                    format="percent"
+                    format="currency2"
                     label={`Target CFMP/saturazione ${year}`}
                     onCommit={(v) => saveConfig({ cfmpTarget: v })}
                   />
-                  <span className="mt-1 block text-[11px] text-stone-500">È il budget della riga CFMP/saturazione (100 = CFMP uguale alla saturazione).</span>
+                  <span className="mt-1 block text-[11px] text-stone-500">È il budget della riga CFMP/saturazione, in € (es. 1,00).</span>
                 </label>
                 <label className="block">
                   <span className="mb-1 block text-xs font-semibold text-stone-600">CFMP dell'anno precedente ({year - 1})</span>
-                  {field('cfmp', 'afp', 'percent', `CFMP ${year - 1}`)}
-                  <span className="mt-1 block text-[11px] text-stone-500">Si digita come percentuale (es. 78,6). Serve per il rapporto CFMP/saturazione.</span>
+                  {field('cfmp', 'afp', 'currency2', `CFMP ${year - 1}`)}
+                  <span className="mt-1 block text-[11px] text-stone-500">Importo in € (es. 0,79). Serve per il rapporto CFMP/saturazione.</span>
                 </label>
               </div>
             </SectionCard>

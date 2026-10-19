@@ -537,6 +537,12 @@ vuota = elimina; i valori compaiono subito nella Dashboard analitica.
   dell'anno precedente. Serve la migration `0011_studio_configs_owner_policies.sql`
   (lettura per i membri, scrittura solo per il titolare). Poltrone e minuti sono
   raccolti ma non ancora usati da nessun calcolo (come prima).
+**CFMP e' un importo in euro**, non una percentuale (Excel: CFMP € 0,79; CFMP/
+saturazione € 1,40, budget € 1,00, scostamento in €): nuovo formato `currency2` (2
+decimali) per le righe CFMP e CFMP/saturazione della dashboard e per i campi "CFMP anno
+precedente" e "Target CFMP/saturazione" del nodo. I valori salvati non cambiano (0,7858
+era gia' un importo); il calcolo CFMP / % saturazione e' invariato.
+
 ### Budget mensili nel nodo (2026-10-19)
 
 Come nel foglio Excel (Saturazione, Customer Experience, CashFlow) **i budget si
