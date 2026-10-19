@@ -1,6 +1,6 @@
 # Stato del progetto — ASISD Controllo di Gestione
 
-Ultimo aggiornamento: 2026-10-01
+Ultimo aggiornamento: 2026-10-19
 
 ## Contesto
 
@@ -607,19 +607,51 @@ Riferimenti compare la somma/media, in sola lettura).
   preventivi, produzione, cashflow, economics) e rendere le pagine di sola lettura.
   Gli inserimenti dell'anno 2025 del foglio Excel sono nei dati demo locali.
 
-## Prossimo passo
+## Dove siamo (2026-10-19) e prossimo passo
 
-1. **Su Supabase**: whitelistare i redirect URL per reset password/inviti
-   — senza questo i due flussi email non funzionano.
-2. Applicare le migration non ancora eseguite: `0007_saturation_and_
-   targets.sql`, `0008_advance_payments_pct.sql`. Verificare con dati
-   reali (non solo demo) tutte le aree con obiettivi.
-3. Testare end-to-end: reset password di un utente esistente, e un nuovo
-   invito titolare.
-4. **Demo ad Andrea Grassi**: l'app è nello stato giusto per una prima
-   demo — vedi il ragionamento sopra. Preparare 2-3 domande aperte da
-   porre direttamente a lui (in particolare: preventivi "generali" mese
-   per mese o a trimestre?) invece di nasconderle.
-5. Pulizie rimaste in coda (non bloccanti): rimuovere le policy
-   `TEMP_DEMO_anon_read_*`; studio-switcher reale se servirà a qualcuno con
-   più studi.
+**Stato**: tutto il lavoro del 19/10 è testato in staging da Emilio e portato in main
+(Economics, Saturazione, Dashboard analitica, nodo Inserimento dati, budget mensili,
+CFMP in euro, Dati completi a mesi nelle colonne, rinomina "Saturazione: traffico").
+Le sezioni datate 2026-10-19 qui sopra descrivono ogni parte e le deviazioni volute
+dall'Excel. File di riferimento: `C:\Users\Emilio\Downloads\(ASISD) AV. CoGe - Cruscotto
+(Esempio Completo) - R15 Nov25.xlsx`.
+
+**Prima di tutto, lato Supabase (da verificare / fare)**
+1. Migration non confermate come applicate: `0009` (verificare), `0010_manual_values`,
+   `0011_studio_configs_owner_policies`, `0012_quote_budget_metrics`. La 0012 è
+   idempotente e ha ricevuto aggiunte dopo la prima stesura (chiavi dei preventivi,
+   `cashflow.credits_overdue`, `economics.revenue_monthly`, `quotes.close_rate_pv`,
+   policy di delete su kpi_targets): va rilanciata per intero. Senza la 0010 la
+   dashboard funziona ma senza valori manuali; senza la 0012 i budget mensili nuovi non
+   si salvano.
+2. Seed dello studio di test: `dati_celle_gialle_aggregato.sql` (generato dalle celle
+   gialle del foglio, NON nel repo, idempotente, da lanciare dopo la 0012). Il
+   generatore `gen_yellow_sql.js` vive nello scratchpad della sessione e non è versionato:
+   per rigenerarlo va riscritto leggendo il foglio "Aggregato Trimestrale".
+3. Whitelistare i redirect URL per reset password/inviti (flussi email).
+4. Ripulire le policy `TEMP_DEMO_anon_read_*` (non bloccante).
+
+**Lavoro da fare (in ordine di proposta)**
+- **Fase 2 del nodo Inserimento dati**: oggi obiettivi e dati mensili si inseriscono in
+  DUE posti (le pagine Saturazione: traffico / Produzione / Saturazione / Preventivi /
+  Cashflow, un mese alla volta; il nodo, con griglie "Budget mensili" a 12 mesi).
+  Scrivono nelle stesse tabelle, quindi restano allineati, ma è ridondante. Proposta
+  (non ancora confermata da Emilio): obiettivi solo nel nodo, nelle pagine restano il
+  dato effettivo del mese e le tabelle in sola lettura; poi spostare nel nodo anche i
+  dati effettivi. Aggiungere nel nodo l'obiettivo in euro della produzione del titolare
+  (oggi solo nella pagina Produzione, usato come riserva se mancano produzione o % titolare).
+- **Nomi**: "Traffico" è ora "Saturazione: traffico". Da decidere se anche "Produzione"
+  diventa "Saturazione: produzione" (come l'Aggregato) e come chiamare la pagina
+  "Saturazione" per non confonderla.
+- Non modellato dall'Excel: la riga "Situazione CashFlow" nell'Aggregato; i ricavi
+  effettivi MENSILI (nell'app i ricavi sono a trimestre, il foglio CashFlow li ha a mese:
+  oggi la riga "Ricavi del periodo" mostra solo l'obiettivo).
+- Poltrone e minuti di apertura teorici sono raccolti ma non usati da nessun calcolo.
+- **Domande aperte per Andrea Grassi**: superare la quota di produzione del titolare è
+  bene o male (le righe titolare restano neutre); preventivi "generali" mese per mese o a
+  trimestre; che obiettivo avere per crediti pianificati / non pianificati / terzo pagante
+  (nel foglio CashFlow non hanno obiettivo mensile).
+- Demo ad Andrea sullo studio di test; poi, se serve, studio-switcher reale.
+
+**Come si lavora (CLAUDE.md in C:\_DEV)**: modifiche su staging, Claude dà i comandi git e
+l'utente li esegue; merge su main solo dopo conferma esplicita dei test.
