@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import { Armchair, BarChart3, ClipboardList, Euro, LayoutDashboard, LogOut, ShieldCheck, Stethoscope, Users, X } from 'lucide-react'
+import { Armchair, BarChart3, ClipboardList, Euro, LayoutDashboard, LogOut, ShieldCheck, Stethoscope, TableProperties, Users, X } from 'lucide-react'
 import { NavLink } from 'react-router-dom'
 import { useAuth } from '../../lib/auth/AuthContext'
 import { useStudio } from '../../lib/studio/StudioContext'
@@ -7,6 +7,7 @@ import { isSupabaseConfigured } from '../../lib/supabaseClient'
 
 const NAV_ITEMS = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard, end: true },
+  { to: '/dashboard-analitica', label: 'Dashboard analitica', icon: TableProperties },
   { to: '/traffico', label: 'Traffico', icon: Users },
   { to: '/preventivi', label: 'Preventivi', icon: ClipboardList },
   { to: '/produzione', label: 'Produzione', icon: Stethoscope },

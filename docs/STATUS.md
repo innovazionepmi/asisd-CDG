@@ -443,6 +443,52 @@ Logica replicata dall'Excel (verificata sui totali del foglio):
   ovvio se superare l'obiettivo sia meglio — **domanda aperta per Andrea**
   (l'obiettivo di quota del titolare scende nell'anno: delega crescente?).
 
+## Dashboard analitica (tab "Aggregato Trimestrale", 2026-10-19, branch staging)
+
+Nuova voce di menu "Dashboard analitica" (`/dashboard-analitica`) che
+riproduce il foglio "Aggregato Trimestrale": per ogni KPI AFP (totale e
+media trimestrale), Budget, Anno e i 4 trimestri con valore, scostamento vs
+media AFP, scostamento vs budget e progressivo. Scopo: "diagnostica
+verticale", leggere una colonna dall'alto in basso su tutti i KPI.
+Codice: `src/lib/analyticDashboard.ts` (motore), `src/components/analytics/
+AnalyticDashboardTable.tsx` (UI), `src/pages/AnalyticDashboardPage.tsx`.
+
+- **Cinque sezioni come nel foglio**: Traffico, Preventivi, Produzione,
+  Cashflow, Economics (conto economico con la stessa logica della pagina
+  Economics: incidenza sui ricavi e scostamento in pp).
+- **Meno Excel**: 7 colonne allineate (AFP, Budget, Anno, T1-T4) invece
+  delle ~22 del foglio; ogni cella ha valore + scostamento AFP + scostamento
+  BDGT + progressivo; intestazioni e colonna KPI fisse durante lo scroll;
+  click sull'intestazione per evidenziare una colonna; sezioni comprimibili
+  e righe "di cui" nascondibili; "vai a" per saltare di sezione; colori col
+  verso giusto (verde meglio / rosso peggio / grigio nessun giudizio, es.
+  quota titolare).
+- **Regole replicate dall'Excel**: somme per conteggi/valuta (AFP/4 per la
+  media trimestrale), media dei mesi con dato per le percentuali (confronto
+  con l'AFP in pp sul valore intero), valore medio = rapporto dei totali del
+  trimestre (anno = media dei trimestri), crediti = fotografia di fine
+  periodo (ultimo mese con dato), proiezione di fine anno della produzione
+  (progressivo x4 / x2 / x4/3). Verificato sui numeri del foglio (traffico,
+  produzione T1 391.786 €, titolare 277.833 €, igiene, proiezioni, conto
+  economico).
+- **AFP**: calcolato con le stesse regole sui dati reali dell'anno
+  precedente; per l'Economics usa la risoluzione già esistente (dati reali ->
+  valori per voce -> solo totali). Dove l'anno precedente non ha dati la
+  cella resta "—" (es. demo 2025: AFP solo per il conto economico).
+- **Scelte diverse dall'Excel (da confermare)**: (1) budget del trimestre =
+  somma/media degli obiettivi mensili del trimestre, non budget annuo/4;
+  (2) scostamento della colonna Anno solo sui trimestri con dato (su anno
+  completo uguale all'Excel); (3) "Valore crediti" somma tutte e quattro le
+  componenti (l'Excel esclude i "non pianificati"); (4) saturazione e "€
+  medio prima visita" dei trimestri su mesi corretti: nel foglio le formule
+  di T2-T4 puntano a mesi sfalsati (es. T2 saturazione = media feb-apr).
+- **Righe del foglio non riportate** (dati non presenti nel modello): N°
+  pazienti da nuclei familiari, C.A.C./V.M.P., preventivi/produzione "in
+  corso" e portafogli iniziali, valore atteso, CFMP/saturazione. Budget
+  presente solo dove esistono obiettivi (visite, produzione, % titolare,
+  igiene, saturazione, % chiusura, % incassi anticipati); gli importi dei
+  preventivi e dei crediti non hanno budget.
+
 ## Prossimo passo
 
 1. **Su Supabase**: whitelistare i redirect URL per reset password/inviti

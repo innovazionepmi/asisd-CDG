@@ -5,6 +5,7 @@ import { AppLayout } from './components/layout/AppLayout'
 import { AuthProvider } from './lib/auth/AuthContext'
 import { StudioProvider } from './lib/studio/StudioContext'
 import { AdminPage } from './pages/AdminPage'
+import { AnalyticDashboardPage } from './pages/AnalyticDashboardPage'
 import { CashflowPage } from './pages/CashflowPage'
 import { DashboardPage } from './pages/DashboardPage'
 import { EconomicsPage } from './pages/EconomicsPage'
@@ -39,6 +40,7 @@ export default function App() {
               }
             >
               <Route path="/" element={<DashboardPage />} />
+              <Route path="/dashboard-analitica" element={<AnalyticDashboardPage />} />
               <Route path="/traffico" element={<TrafficoPage />} />
               <Route path="/preventivi" element={<PreventiviPage />} />
               <Route path="/produzione" element={<ProduzionePage />} />
