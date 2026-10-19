@@ -443,51 +443,61 @@ Logica replicata dall'Excel (verificata sui totali del foglio):
   ovvio se superare l'obiettivo sia meglio — **domanda aperta per Andrea**
   (l'obiettivo di quota del titolare scende nell'anno: delega crescente?).
 
-## Dashboard analitica (tab "Aggregato Trimestrale", 2026-10-19, branch staging)
+## Dashboard analitica: tutti i parametri del foglio (tab "Aggregato Trimestrale", 2026-10-19, branch staging)
 
-Nuova voce di menu "Dashboard analitica" (`/dashboard-analitica`) che
-riproduce il foglio "Aggregato Trimestrale": per ogni KPI AFP (totale e
-media trimestrale), Budget, Anno e i 4 trimestri con valore, scostamento vs
-media AFP, scostamento vs budget e progressivo. Scopo: "diagnostica
-verticale", leggere una colonna dall'alto in basso su tutti i KPI.
-Codice: `src/lib/analyticDashboard.ts` (motore), `src/components/analytics/
-AnalyticDashboardTable.tsx` (UI), `src/pages/AnalyticDashboardPage.tsx`.
+La prima versione (celle "impilate" a 7 colonne) nascondeva molti parametri del
+foglio. Riscritta: la pagina `/dashboard-analitica` mostra **tutte le righe e
+tutte le 22 colonne** dell'Excel, identiche in ogni sezione (si legge una colonna
+dall'alto in basso): AFP (Totale, Media trim.), Anno (Totale/media, Scost. vs AFP),
+Budget (Budget, Scost. vs BDGT) e, per ogni trimestre, Valore trimestrale, Scost.
+vs media AFP, Scost. vs BDGT, Valore progressivo. Sezioni: Traffico, Preventivi,
+Produzione, Cashflow + i tre blocchi Economics (cumulato dal 01/01 con budget, a
+trimestre, previsionale) con le intestazioni del foglio. Codice:
+`src/lib/analyticSheet.ts` (motore), `src/lib/analyticExcelMap.ts` (tipo di cella
+per riga/colonna, generato dai colori del foglio: giallo = input, verde/blu =
+calcolata, grigio = non applicabile), `src/components/analytics/AnalyticSheetTable.tsx`,
+`src/pages/AnalyticDashboardPage.tsx`.
 
-- **Cinque sezioni come nel foglio**: Traffico, Preventivi, Produzione,
-  Cashflow, Economics (conto economico con la stessa logica della pagina
-  Economics: incidenza sui ricavi e scostamento in pp).
-- **Meno Excel**: 7 colonne allineate (AFP, Budget, Anno, T1-T4) invece
-  delle ~22 del foglio; ogni cella ha valore + scostamento AFP + scostamento
-  BDGT + progressivo; intestazioni e colonna KPI fisse durante lo scroll;
-  click sull'intestazione per evidenziare una colonna; sezioni comprimibili
-  e righe "di cui" nascondibili; "vai a" per saltare di sezione; colori col
-  verso giusto (verde meglio / rosso peggio / grigio nessun giudizio, es.
-  quota titolare).
-- **Regole replicate dall'Excel**: somme per conteggi/valuta (AFP/4 per la
-  media trimestrale), media dei mesi con dato per le percentuali (confronto
-  con l'AFP in pp sul valore intero), valore medio = rapporto dei totali del
-  trimestre (anno = media dei trimestri), crediti = fotografia di fine
-  periodo (ultimo mese con dato), proiezione di fine anno della produzione
-  (progressivo x4 / x2 / x4/3). Verificato sui numeri del foglio (traffico,
-  produzione T1 391.786 €, titolare 277.833 €, igiene, proiezioni, conto
-  economico).
-- **AFP**: calcolato con le stesse regole sui dati reali dell'anno
-  precedente; per l'Economics usa la risoluzione già esistente (dati reali ->
-  valori per voce -> solo totali). Dove l'anno precedente non ha dati la
-  cella resta "—" (es. demo 2025: AFP solo per il conto economico).
+**Principio (chiarito da Emilio)**: la dashboard MOSTRA i dati, non e' un foglio
+Excel da compilare; l'inserimento resta nelle pagine dedicate come prima. I colori
+del foglio servono solo a capire cosa e' input e cosa e' calcolato. Le celle grigie
+sono rese "non applicabili" (righe grigie); "—" = dato non disponibile.
+
+- **Righe nuove rispetto alla prima versione**: N° pazienti da nuclei familiari,
+  C.A.C. / V.M.P. (stato, calcolo, C.A.C., V.M.P.), preventivi in corso, portafogli
+  di inizio anno, € in corso, valore atteso, produzione da eseguire, portafoglio
+  produzione, CFMP/saturazione, CFMP, % crediti per componente, portafoglio crediti.
+  **Sono presenti ma vuote ("—")**: l'app non raccoglie ancora quei dati. Da
+  decidere dove inserirli (pagine esistenti o nuove) — domanda aperta.
+- **Fonti dati**: valori da dati mensili/trimestrali; AFP dai dati reali dell'anno
+  precedente (conto economico: anche AFP per voce); budget da kpi_targets mensili
+  (anche `cashflow.advance_payments`), CFMP/saturazione dal parametro
+  `cfmp_target` di studio_configs e Ricavi/MOL dagli obiettivi trimestrali
+  `economics.revenue` / `economics.mol` se presenti. Dove manca il riferimento
+  (AFP o budget) gli scostamenti restano "—": e' il motivo principale per cui sul
+  foglio compaiono e nell'app no (l'AFP e il budget del foglio sono input digitati).
+- **Regole replicate dall'Excel**: somma dei mesi per conteggi/valuta (media
+  trimestrale AFP = AFP/4), media dei mesi con dato per le percentuali (confronto
+  con l'AFP sul valore intero, in pp), valore medio = rapporto dei totali del
+  trimestre (anno = media dei trimestri), crediti = fotografia di fine periodo,
+  proiezione di fine anno della produzione (progressivo x4 / x2 / x4/3), %
+  incassi anticipati = incassi / ricavi del trimestre (se manca il conto
+  economico, il valore % inserito mese per mese).
 - **Scelte diverse dall'Excel (da confermare)**: (1) budget del trimestre =
-  somma/media degli obiettivi mensili del trimestre, non budget annuo/4;
-  (2) scostamento della colonna Anno solo sui trimestri con dato (su anno
-  completo uguale all'Excel); (3) "Valore crediti" somma tutte e quattro le
-  componenti (l'Excel esclude i "non pianificati"); (4) saturazione e "€
-  medio prima visita" dei trimestri su mesi corretti: nel foglio le formule
-  di T2-T4 puntano a mesi sfalsati (es. T2 saturazione = media feb-apr).
-- **Righe del foglio non riportate** (dati non presenti nel modello): N°
-  pazienti da nuclei familiari, C.A.C./V.M.P., preventivi/produzione "in
-  corso" e portafogli iniziali, valore atteso, CFMP/saturazione. Budget
-  presente solo dove esistono obiettivi (visite, produzione, % titolare,
-  igiene, saturazione, % chiusura, % incassi anticipati); gli importi dei
-  preventivi e dei crediti non hanno budget.
+  somma/media degli obiettivi mensili del trimestre, non budget annuo/4; (2) per
+  percentuali e valori medi il budget non si divide per 4; (3) scostamento della
+  colonna Anno solo sui trimestri con dato (su anno completo uguale all'Excel);
+  (4) "Valore crediti" somma tutte e quattro le componenti (l'Excel esclude i "non
+  pianificati"); (5) saturazione e "€ medio prima visita" dei trimestri su mesi
+  corretti (nel foglio le formule T2-T4 puntano a mesi sfalsati); (6) nei blocchi
+  Economics lo scostamento trimestrale e' sul periodo corretto (il foglio nel
+  blocco cumulato richiama le variazioni del singolo trimestre) e lo scostamento
+  annuo dei costi e' la variazione % in euro come nella colonna F del foglio.
+- **Ottimizzazioni gia' presenti**: una tabella per sezione con intestazioni fisse
+  e colonna KPI fissa, colonne raggruppabili/nascondibili (AFP, Anno, Budget, T1-T4),
+  sezioni comprimibili, "vai a", "di cui" nascondibili, evidenziazione di una
+  colonna con un click, colori col verso giusto (verde meglio / rosso peggio /
+  grigio nessun giudizio).
 
 ## Prossimo passo
 

@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
-import { AnalyticDashboardTable } from '../components/analytics/AnalyticDashboardTable'
+import { AnalyticSheetTable } from '../components/analytics/AnalyticSheetTable'
 import { PageHeader } from '../components/layout/PageHeader'
 import { YearSelect } from '../components/ui/PeriodSelect'
 import { SectionCard } from '../components/ui/SectionCard'
-import { buildAnalyticDashboard, type YearData } from '../lib/analyticDashboard'
+import { buildAnalyticSheet, type YearData } from '../lib/analyticSheet'
 import { dataProvider } from '../lib/provider'
 import { DEFAULT_YEAR, SELECTABLE_YEARS } from '../lib/years'
 import type { Channel, KpiPriorYearBaseline, KpiTarget, PlAccount, PlPriorYearBaseline, TreatmentCategory } from '../lib/types'
@@ -27,6 +27,7 @@ interface Loaded {
   categories: TreatmentCategory[]
   accounts: PlAccount[]
   targets: KpiTarget[]
+  cfmpTarget: number | null
   kpiBaseline: KpiPriorYearBaseline[]
   afpBaseline: PlPriorYearBaseline[]
   current: YearData
@@ -47,13 +48,14 @@ export function AnalyticDashboardPage() {
       dataProvider.listTreatmentCategories(),
       dataProvider.listPlAccounts(),
       dataProvider.getKpiTargets(year),
+      dataProvider.getStudioConfig(year),
       dataProvider.getKpiPriorYearBaseline(year - 1),
       dataProvider.getPlPriorYearBaseline(year - 1),
       loadYear(year),
       loadYear(year - 1),
     ])
-      .then(([channels, categories, accounts, targets, kpiBaseline, afpBaseline, current, prior]) => {
-        if (!cancelled) setData({ channels, categories, accounts, targets, kpiBaseline, afpBaseline, current, prior })
+      .then(([channels, categories, accounts, targets, config, kpiBaseline, afpBaseline, current, prior]) => {
+        if (!cancelled) setData({ channels, categories, accounts, targets, cfmpTarget: config?.cfmpTarget ?? null, kpiBaseline, afpBaseline, current, prior })
       })
       .catch((e) => {
         if (!cancelled) setError(e instanceof Error ? e.message : 'Errore nel caricamento dei dati.')
@@ -63,7 +65,7 @@ export function AnalyticDashboardPage() {
     }
   }, [year])
 
-  const sections = useMemo(() => (data ? buildAnalyticDashboard({ year, ...data }) : []), [data, year])
+  const sections = useMemo(() => (data ? buildAnalyticSheet({ year, ...data }) : []), [data, year])
 
   return (
     <div>
@@ -75,7 +77,7 @@ export function AnalyticDashboardPage() {
       <SectionCard title="Cruscotto aggregato trimestrale" subtitle={`Anno ${year} a confronto con l'anno precedente (AFP) e con il budget`}>
         {error && <p className="rounded-card bg-danger-100 px-4 py-3 text-sm text-danger-600">Errore nel caricamento: {error}</p>}
         {!error && !data && <p className="py-8 text-center text-sm text-stone-500">Caricamento…</p>}
-        {data && <AnalyticDashboardTable sections={sections} year={year} />}
+        {data && <AnalyticSheetTable sections={sections} year={year} />}
       </SectionCard>
     </div>
   )
