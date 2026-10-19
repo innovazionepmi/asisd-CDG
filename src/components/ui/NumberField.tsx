@@ -4,12 +4,14 @@ export function NumberField({
   onChange,
   step = 1,
   prefix,
+  hint,
 }: {
   label: string
   value: number
   onChange: (v: number) => void
   step?: number
   prefix?: string
+  hint?: string
 }) {
   return (
     <label className="block">
@@ -24,6 +26,7 @@ export function NumberField({
           className="w-full bg-transparent px-2.5 py-1.5 text-sm text-navy-900 outline-none"
         />
       </div>
+      {hint && <span className="mt-1 block text-[11px] text-stone-500">{hint}</span>}
     </label>
   )
 }

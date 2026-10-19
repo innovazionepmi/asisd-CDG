@@ -32,7 +32,15 @@ export function MonthSelect({ month, onChange }: { month: number; onChange: (m: 
   )
 }
 
-export function QuarterSelect({ quarter, onChange }: { quarter: number; onChange: (q: number) => void }) {
+export function QuarterSelect({
+  quarter,
+  onChange,
+  labelFor = quarterLabel,
+}: {
+  quarter: number
+  onChange: (q: number) => void
+  labelFor?: (q: number) => string
+}) {
   return (
     <select
       value={quarter}
@@ -41,7 +49,7 @@ export function QuarterSelect({ quarter, onChange }: { quarter: number; onChange
     >
       {[1, 2, 3, 4].map((q) => (
         <option key={q} value={q}>
-          {quarterLabel(q)}
+          {labelFor(q)}
         </option>
       ))}
     </select>

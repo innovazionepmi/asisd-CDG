@@ -98,7 +98,7 @@ function addInto(target: AccountValues, rows: PlQuarterly[]) {
   for (const r of rows) target[r.accountId] = (target[r.accountId] ?? 0) + r.amount
 }
 
-function valuesForQuarters(pl: PlQuarterly[], year: number, from: number, to: number): AccountValues {
+export function valuesForQuarters(pl: PlQuarterly[], year: number, from: number, to: number): AccountValues {
   const periods = new Set<string>()
   for (let q = from; q <= to; q++) periods.add(quarterKey(year, q))
   const out: AccountValues = {}
@@ -121,8 +121,8 @@ export function lastQuarterWithData(pl: PlQuarterly[], year: number): number {
   return 0
 }
 
-const QUARTER_START = ['01/01', '01/04', '01/07', '01/10']
-const QUARTER_END = ['31/03', '30/06', '30/09', '31/12']
+export const QUARTER_START = ['01/01', '01/04', '01/07', '01/10']
+export const QUARTER_END = ['31/03', '30/06', '30/09', '31/12']
 
 export type PlViewMode = 'cumulative' | 'quarter' | 'forecast'
 
@@ -259,6 +259,47 @@ export function cellFor(def: PlRowDef, col: PlColumn, afp: PlColumn | null): PlC
     return { value, pct, delta: pct - afpValue / afpRev, deltaKind: 'pp' }
   }
   return { value, pct, delta: null, deltaKind: null }
+}
+
+export interface PlDeltaWrite {
+  periodQuarter: string
+  accountId: string
+  amount: number
+}
+
+/**
+ * Inserimento CUMULATO: l'utente digita i valori da inizio anno fino al
+ * trimestre scelto (come nell'Excel / come arrivano dal commercialista);
+ * a database resta il delta del singolo trimestre. Se il trimestre
+ * successivo ha gia' dati, il suo delta viene ricalcolato in modo che il
+ * suo cumulato non cambi (altrimenti correggere il 1° trimestre sposterebbe
+ * in silenzio tutti i cumulati seguenti).
+ */
+export function planCumulativeSave(args: {
+  pl: PlQuarterly[]
+  accounts: PlAccount[]
+  year: number
+  quarter: number
+  ytd: AccountValues
+}): PlDeltaWrite[] {
+  const { pl, accounts, year, quarter, ytd } = args
+  const prev = quarter > 1 ? valuesForQuarters(pl, year, 1, quarter - 1) : {}
+  const oldCurrent = valuesForQuarters(pl, year, quarter, quarter)
+  const nextKey = quarter < 4 ? quarterKey(year, quarter + 1) : null
+  const nextHasData = nextKey != null && pl.some((r) => r.periodQuarter === nextKey && r.amount !== 0)
+  const oldNext = nextHasData ? valuesForQuarters(pl, year, quarter + 1, quarter + 1) : {}
+
+  const writes: PlDeltaWrite[] = []
+  for (const a of accounts) {
+    const prevYtd = prev[a.id] ?? 0
+    const newYtd = ytd[a.id] ?? 0
+    writes.push({ periodQuarter: quarterKey(year, quarter), accountId: a.id, amount: newYtd - prevYtd })
+    if (nextHasData && nextKey) {
+      const oldNextYtd = prevYtd + (oldCurrent[a.id] ?? 0) + (oldNext[a.id] ?? 0)
+      writes.push({ periodQuarter: nextKey, accountId: a.id, amount: oldNextYtd - newYtd })
+    }
+  }
+  return writes
 }
 
 /** Valore AFP "inserito a mano" -> totali da riscrivere in kpi_prior_year_baseline. */

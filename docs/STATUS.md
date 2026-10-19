@@ -388,6 +388,17 @@ formule incluse, prima di scrivere codice).
   dettaglio. Il form "Valore AFP" ora è per voce e a ogni salvataggio
   riscrive anche i due totali in `kpi_prior_year_baseline` (la Dashboard e
   le viste SQL continuano a leggere quelli).
+- **Inserimento trimestrale = CUMULATO da inizio anno** (precisato da
+  Emilio dopo il test su staging, come nell'Excel e come arrivano i dati
+  dal commercialista). Sezione rinominata "Trimestrale inserimento dati";
+  nel selettore "Al 30/06 (cumulato)", con hint del cumulato precedente
+  sotto ogni voce, avviso se un cumulato risulta inferiore al precedente
+  (trimestre negativo) e anteprima del solo trimestre. **A database resta
+  il delta del singolo trimestre** (nessuna migrazione dei dati esistenti):
+  il form converte in `planCumulativeSave` (`plStatement.ts`) e, se il
+  trimestre successivo ha già dati, ne riallinea il delta così che il suo
+  cumulato non cambi quando si corregge un trimestre precedente. Prima di
+  questa modifica il form salvava il singolo trimestre, non il cumulato.
 - La vecchia tabella "Dati completi" (solo macro-voci per trimestre) è
   stata sostituita; ordine pagina: KPI, Conto economico, grafici,
   inserimento trimestre, Valore AFP.

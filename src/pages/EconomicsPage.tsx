@@ -9,7 +9,16 @@ import { NumberField } from '../components/ui/NumberField'
 import { SectionCard } from '../components/ui/SectionCard'
 import { deviationPct, formatEur, formatPct, safeDiv, sum, trendOf } from '../lib/calc'
 import { allQuartersOfYear, quarterKey } from '../lib/periods'
-import { afpTotals, resolveAfp, type PlRowKind } from '../lib/plStatement'
+import {
+  afpTotals,
+  compute,
+  planCumulativeSave,
+  QUARTER_END,
+  QUARTER_START,
+  resolveAfp,
+  valuesForQuarters,
+  type PlRowKind,
+} from '../lib/plStatement'
 import { dataProvider } from '../lib/provider'
 import { DEFAULT_YEAR, SELECTABLE_YEARS } from '../lib/years'
 import type { KpiPriorYearBaseline, PlAccount, PlPriorYearBaseline, PlQuarterly } from '../lib/types'
@@ -18,10 +27,12 @@ function AccountFields({
   accounts,
   values,
   onChange,
+  hints,
 }: {
   accounts: PlAccount[]
   values: Record<string, number>
   onChange: (accountId: string, v: number) => void
+  hints?: Record<string, string>
 }) {
   const groups: { title: string; items: PlAccount[] }[] = [
     { title: 'Ricavi', items: accounts.filter((a) => a.accountType === 'revenue') },
@@ -35,7 +46,7 @@ function AccountFields({
           <p className="mb-3 text-sm font-semibold text-navy-900">{g.title}</p>
           <div className="space-y-3">
             {g.items.map((a) => (
-              <NumberField key={a.id} label={a.name} value={values[a.id] ?? 0} onChange={(v) => onChange(a.id, v)} prefix="€" />
+              <NumberField key={a.id} label={a.name} value={values[a.id] ?? 0} onChange={(v) => onChange(a.id, v)} prefix="€" hint={hints?.[a.id]} />
             ))}
           </div>
         </div>
@@ -77,12 +88,12 @@ export function EconomicsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [year])
 
+  // Il form lavora sul CUMULATO da inizio anno fino al trimestre scelto;
+  // a database resta il delta del singolo trimestre (vedi planCumulativeSave).
   useEffect(() => {
-    const period = quarterKey(year, quarter)
+    const ytd = valuesForQuarters(pl, year, 1, quarter)
     const next: Record<string, number> = {}
-    for (const acc of accounts) {
-      next[acc.id] = pl.find((r) => r.periodQuarter === period && r.accountId === acc.id)?.amount ?? 0
-    }
+    for (const acc of accounts) next[acc.id] = ytd[acc.id] ?? 0
     setDraft(next)
   }, [accounts, pl, year, quarter])
 
@@ -96,8 +107,8 @@ export function EconomicsPage() {
 
   async function save() {
     setSaveState('saving')
-    const period = quarterKey(year, quarter)
-    await Promise.all(accounts.map((acc) => dataProvider.upsertPlQuarterly({ periodQuarter: period, accountId: acc.id, amount: draft[acc.id] ?? 0 })))
+    const writes = planCumulativeSave({ pl, accounts, year, quarter, ytd: draft })
+    await Promise.all(writes.map((w) => dataProvider.upsertPlQuarterly(w)))
     await reload()
     setSaveState('saved')
     setTimeout(() => setSaveState('idle'), 1500)
@@ -154,9 +165,17 @@ export function EconomicsPage() {
     return { revenue, mdc, mol, revenuePrior, molPrior, isEstimated, costBreakdown, trend }
   }, [pl, accounts, year, afp])
 
-  const draftRevenue = sum(accounts.filter((a) => a.accountType === 'revenue').map((a) => draft[a.id] ?? 0))
-  const draftVariable = sum(accounts.filter((a) => a.accountType === 'variable_cost').map((a) => draft[a.id] ?? 0))
-  const draftFixed = sum(accounts.filter((a) => a.accountType === 'fixed_cost').map((a) => draft[a.id] ?? 0))
+  const prevYtd = useMemo(() => (quarter > 1 ? valuesForQuarters(pl, year, 1, quarter - 1) : {}), [pl, year, quarter])
+  const draftTotals = compute(draft, accounts)
+  const prevTotals = compute(prevYtd, accounts)
+  const quarterRevenue = draftTotals.revenue - prevTotals.revenue
+  const quarterMol = draftTotals.mol - prevTotals.mol
+  const negativeAccounts = accounts.filter((a) => (draft[a.id] ?? 0) < (prevYtd[a.id] ?? 0) - 0.005)
+  const nextQuarterHasData = quarter < 4 && pl.some((r) => r.periodQuarter === quarterKey(year, quarter + 1) && r.amount !== 0)
+  const prevHints: Record<string, string> | undefined =
+    quarter > 1
+      ? Object.fromEntries(accounts.map((a) => [a.id, `Cumulato al ${QUARTER_END[quarter - 2]}: ${formatEur(prevYtd[a.id] ?? 0)}`]))
+      : undefined
   const afpDraftTotals = afpTotals(afpDraft, accounts)
 
   return (
@@ -213,19 +232,36 @@ export function EconomicsPage() {
       </div>
 
       <SectionCard
-        title="Inserimento dati trimestrale"
-        subtitle="Seleziona il trimestre e aggiorna le voci di conto economico"
-        actions={<QuarterSelect quarter={quarter} onChange={setQuarter} />}
+        title="Trimestrale inserimento dati"
+        subtitle="Inserisci i valori cumulati da inizio anno fino al trimestre selezionato: i valori del singolo trimestre si ricavano per differenza."
+        actions={<QuarterSelect quarter={quarter} onChange={setQuarter} labelFor={(q) => `Al ${QUARTER_END[q - 1]} (cumulato)`} />}
       >
-        <AccountFields accounts={accounts} values={draft} onChange={(id, v) => setDraft((d) => ({ ...d, [id]: v }))} />
+        <p className="mb-4 rounded-card bg-navy-50 px-3 py-2 text-xs text-navy-700">
+          Stai inserendo il cumulato <span className="font-semibold">dal {QUARTER_START[0]} al {QUARTER_END[quarter - 1]}</span> {year}.
+          {nextQuarterHasData && ' I trimestri successivi già inseriti mantengono il loro cumulato.'}
+        </p>
+        <AccountFields accounts={accounts} values={draft} onChange={(id, v) => setDraft((d) => ({ ...d, [id]: v }))} hints={prevHints} />
 
-        <div className="mt-5 flex flex-wrap items-center gap-4 rounded-card bg-stone-100 px-4 py-3 text-sm">
+        {negativeAccounts.length > 0 && (
+          <p className="mt-4 rounded-card bg-warning-100 px-3 py-2 text-xs text-warning-700">
+            Attenzione: per {negativeAccounts.length === 1 ? 'questa voce' : 'queste voci'} il cumulato è inferiore a quello del trimestre precedente (il
+            trimestre risulterebbe negativo): {negativeAccounts.map((a) => a.name).join(', ')}.
+          </p>
+        )}
+
+        <div className="mt-5 flex flex-wrap items-center gap-x-6 gap-y-1 rounded-card bg-stone-100 px-4 py-3 text-sm">
           <span className="text-stone-500">
-            MDC anteprima: <span className="font-semibold text-navy-900">{formatEur(draftRevenue - draftVariable)}</span>
+            MDC cumulato: <span className="font-semibold text-navy-900">{formatEur(draftTotals.mdc)}</span>
           </span>
           <span className="text-stone-500">
-            MOL anteprima: <span className="font-semibold text-navy-900">{formatEur(draftRevenue - draftVariable - draftFixed)}</span>
+            MOL cumulato: <span className="font-semibold text-navy-900">{formatEur(draftTotals.mol)}</span>
           </span>
+          {quarter > 1 && (
+            <span className="text-stone-500">
+              Solo questo trimestre — ricavi: <span className="font-semibold text-navy-900">{formatEur(quarterRevenue)}</span>, MOL:{' '}
+              <span className="font-semibold text-navy-900">{formatEur(quarterMol)}</span>
+            </span>
+          )}
         </div>
 
         <button
