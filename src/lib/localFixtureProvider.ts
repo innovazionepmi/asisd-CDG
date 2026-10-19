@@ -234,4 +234,9 @@ export const localFixtureProvider: DataProvider = {
     kpiTargets = upsertBy(kpiTargets, row, (r) => r.periodStart === row.periodStart && r.metricKey === row.metricKey)
     saveTable('kpiTargets', kpiTargets)
   },
+  async deleteKpiTarget(metricKey, periodStart) {
+    kpiTargets ??= loadTable('kpiTargets', KPI_TARGETS)
+    kpiTargets = kpiTargets.filter((r) => !(r.periodStart === periodStart && r.metricKey === metricKey))
+    saveTable('kpiTargets', kpiTargets)
+  },
 }

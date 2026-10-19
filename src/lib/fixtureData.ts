@@ -348,6 +348,17 @@ function buildTargets(year: number, growthFactor: number): KpiTarget[] {
   push('production.saturation_pct', SATURATION_TARGET_2025)
   push('cashflow.advance_payments_pct', ADVANCE_PAYMENTS_TARGET_2025)
   push('quotes.close_rate', CLOSE_RATE_TARGET_2025)
+  // budget annui del foglio "Aggregato Trimestrale" ripartiti in 12 mesi uguali
+  const flat = (annual: number) => Array(12).fill(annual / 12)
+  push('quotes.issued_count', grow(flat(1510), growthFactor))
+  push('quotes.confirmed_count', grow(flat(1106), growthFactor))
+  push('quotes.issued_value', grow(flat(4_123_000), growthFactor))
+  push('quotes.confirmed_value', grow(flat(2_886_000), growthFactor))
+  push('quotes.issued_value_pv', grow(flat(2_600_000), growthFactor))
+  push('quotes.confirmed_value_pv', grow(flat(1_700_000), growthFactor))
+  push('cashflow.advance_payments', grow(flat(95_691), growthFactor))
+  push('cashflow.credits_overdue', Array(12).fill(180_000)) // livello di fine mese, gia' mensile
+  push('economics.revenue_monthly', grow(PRODUCTION_TARGET_2025, growthFactor))
   return targets
 }
 

@@ -435,4 +435,10 @@ export const supabaseProvider: DataProvider = {
     )
     if (error) throw error
   },
+  async deleteKpiTarget(metricKey, periodStart) {
+    const db = requireClient()
+    const studioId = requireStudioId()
+    const { error } = await db.from('kpi_targets').delete().eq('studio_id', studioId).eq('metric_key', metricKey).eq('period_start', periodStart)
+    if (error) throw error
+  },
 }

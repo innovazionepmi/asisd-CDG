@@ -18,6 +18,7 @@ export function ManualField({
   format,
   placeholder,
   disabled,
+  required,
   onCommit,
   label,
 }: {
@@ -25,6 +26,8 @@ export function ManualField({
   format: Format
   placeholder?: string
   disabled?: boolean
+  /** campo obbligatorio: se svuotato torna al valore precedente invece di eliminarlo */
+  required?: boolean
   onCommit: (value: number | null) => Promise<void>
   label: string
 }) {
@@ -36,7 +39,13 @@ export function ManualField({
   async function commit() {
     const trimmed = text.trim().replace(',', '.')
     let next: number | null
-    if (trimmed === '') next = null
+    if (trimmed === '') {
+      if (required) {
+        setText(toText(value, format))
+        return
+      }
+      next = null
+    }
     else {
       const n = Number(trimmed)
       if (!Number.isFinite(n)) {

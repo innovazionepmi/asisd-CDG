@@ -537,6 +537,40 @@ vuota = elimina; i valori compaiono subito nella Dashboard analitica.
   dell'anno precedente. Serve la migration `0011_studio_configs_owner_policies.sql`
   (lettura per i membri, scrittura solo per il titolare). Poltrone e minuti sono
   raccolti ma non ancora usati da nessun calcolo (come prima).
+### Budget mensili nel nodo (2026-10-19)
+
+Come nel foglio Excel (Saturazione, Customer Experience, CashFlow) **i budget si
+inseriscono per mese** e il totale annuo e' la somma dei mesi (media per le
+percentuali e per i livelli di fine mese). Principio: se per un KPI esiste una chiave
+di obiettivo mensile (`kpi_targets`) il budget annuo non si digita piu' (nel
+Riferimenti compare la somma/media, in sola lettura).
+
+- **Griglia "Budget mensili"** in ogni scheda area (Gen-Dic + colonna Anno calcolata,
+  casella vuota = elimina l'obiettivo del mese):
+  Traffico `traffic.new_patients.total`, `traffic.reactivated.total`; Preventivi
+  `quotes.issued_count/confirmed_count/issued_value/confirmed_value/issued_value_pv/
+  confirmed_value_pv` e `quotes.close_rate` (media); Produzione `production.total`,
+  `production.titolare_share` (media, il budget € titolare = produzione x quota),
+  `production.hygiene_sessions`, `production.saturation_pct` (media); Cashflow
+  `cashflow.advance_payments`, `cashflow.advance_payments_pct` (media),
+  `cashflow.credits_overdue` (livello a fine mese, media) e `economics.revenue_monthly`
+  (ricavi del periodo, foglio CashFlow riga 17: somma = budget annuo dei ricavi).
+- **Ricavi**: il budget dei ricavi di Economics e dei budget % dei crediti usa, in
+  ordine, i ricavi mensili > l'obiettivo trimestrale `economics.revenue` > il valore
+  manuale. Con i ricavi mensili i budget cumulati dei trimestri sono la somma esatta
+  dei mesi (non piu' annuo x n/4). Il MOL resta trimestrale/annuo.
+- **Crediti**: solo i crediti scaduti hanno un obiettivo mensile nel foglio CashFlow;
+  pianificati, non pianificati e terzo pagante restano budget annui manuali.
+  Il budget "% crediti scaduti" = crediti scaduti budget / ricavi budget.
+- **Non modellato**: la riga "Situazione CashFlow" (Positivo/Negativo/Pareggio per
+  mese) del foglio CashFlow.
+- **Migration `0012_quote_budget_metrics.sql` (da applicare, prima del seed SQL)**:
+  aggiunge a `metric_catalog` le 6 chiavi dei preventivi, `cashflow.credits_overdue` ed
+  `economics.revenue_monthly`, piu' la policy di delete su `kpi_targets` solo per il
+  titolare (serve per svuotare un mese).
+- Nel codice: `useAnalyticData().saveTarget(metricKey, mese, valore|null)`,
+  `dataProvider.deleteKpiTarget`, `ManualField required`.
+
 - **Fase 2 (da fare)**: spostare nel nodo anche gli inserimenti gia' esistenti (visite,
   preventivi, produzione, cashflow, economics) e rendere le pagine di sola lettura.
   Gli inserimenti dell'anno 2025 del foglio Excel sono nei dati demo locali.

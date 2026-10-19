@@ -85,7 +85,7 @@ export interface SheetRow {
   tone: Tone
   emphasis?: 'total' | 'mdc'
   cells: SheetCell[]
-  ref?: { afp: RefInfo; budget: RefInfo; format: 'count' | 'currency' | 'percent'; rowKey?: string; manualQ?: boolean; manualYear?: boolean; cfmp?: boolean }
+  ref?: { afp: RefInfo; budget: RefInfo; format: 'count' | 'currency' | 'percent'; rowKey?: string; monthlyBudget?: string; manualQ?: boolean; manualYear?: boolean; cfmp?: boolean }
 }
 
 export interface HeaderCol {
@@ -275,6 +275,9 @@ const titolareBudget = (targets: KpiTarget[], periods: string[]): Series => {
   const stored = targetSeries('production.titolare')(targets, periods)
   return periods.map((_, i) => (prod[i] != null && share[i] != null ? (prod[i] as number) * (share[i] as number) : stored[i]))
 }
+
+/** Budget ricavi mensile (foglio CashFlow, riga "Ricavi del periodo - Obiettivo"): serie dei 12 mesi. */
+const revenueMonthlyBudget = (targets: KpiTarget[], year: number): Series => targetSeries('economics.revenue_monthly')(targets, allMonthsOfYear(year))
 
 /** Obiettivo trimestrale di conto economico (kpi_targets, grana trimestre): somma dei trimestri presenti. */
 const quarterlyTargetTotal = (targets: KpiTarget[], year: number, key: string): number | null => {
@@ -491,8 +494,8 @@ function buildSectionDefs(input: SheetInput): SectionDef[] {
   }
 
   const preventivi: Spec[] = [
-    ...pair('q_issued_count', 22, 'Nr Preventivi Emessi (Generali)', 'Di cui Nr Emessi Prima Visita', 'count', 'higher', 'issuedCount', {}, { budgetDerive: (r) => r.budget('new_patients') }),
-    ...pair('q_confirmed_count', 24, 'Nr Preventivi Confermati (Generali)', 'Di cui Nr Confermati Prima Visita', 'count', 'higher', 'confirmedCount', {}, {
+    ...pair('q_issued_count', 22, 'Nr Preventivi Emessi (Generali)', 'Di cui Nr Emessi Prima Visita', 'count', 'higher', 'issuedCount', { budgetKey: 'quotes.issued_count' }, { budgetDerive: (r) => r.budget('new_patients') }),
+    ...pair('q_confirmed_count', 24, 'Nr Preventivi Confermati (Generali)', 'Di cui Nr Confermati Prima Visita', 'count', 'higher', 'confirmedCount', { budgetKey: 'quotes.confirmed_count' }, {
       budgetDerive: (r) => {
         const base = r.budget('q_issued_count_pv')
         const rate = r.budget('q_close_rate_pv')
@@ -504,8 +507,8 @@ function buildSectionDefs(input: SheetInput): SectionDef[] {
     inProgress('q_in_progress_count_pv', 29, 'Di cui Nr Preventivi in corso Prima Visita', true, 'count'),
     S({ key: 'q_portfolio_count', label: 'Nr Portafoglio Preventivi Inizio Anno', xl: 30, format: 'count', tone: 'neutral', agg: 'last', manualYear: true }),
     S({ key: 'q_portfolio_count_pv', label: 'Di cui Nr Portafoglio Preventivi Inizio Anno P. Visita', xl: 31, format: 'count', tone: 'neutral', agg: 'last', manualYear: true }),
-    ...pair('q_issued_value', 32, '€ Preventivi Emessi (Generali)', 'Di cui € Emessi Prima Visita', 'currency', 'higher', 'issuedValue'),
-    ...pair('q_confirmed_value', 34, '€ Preventivi Confermati (Generali)', 'Di cui € Confermati Prima Visita', 'currency', 'higher', 'confirmedValue'),
+    ...pair('q_issued_value', 32, '€ Preventivi Emessi (Generali)', 'Di cui € Emessi Prima Visita', 'currency', 'higher', 'issuedValue', { budgetKey: 'quotes.issued_value' }, { budgetKey: 'quotes.issued_value_pv' }),
+    ...pair('q_confirmed_value', 34, '€ Preventivi Confermati (Generali)', 'Di cui € Confermati Prima Visita', 'currency', 'higher', 'confirmedValue', { budgetKey: 'quotes.confirmed_value' }, { budgetKey: 'quotes.confirmed_value_pv' }),
     ...pair('q_lost_value', 36, '€ Preventivi Persi (Generali)', 'Di cui € Persi Prima Visita', 'currency', 'lower', 'lostValue'),
     inProgress('q_in_progress_value', 38, '€ Preventivi in Corso (Generali)', false, 'value'),
     inProgress('q_in_progress_value_pv', 39, 'Di cui € Preventivi in corso Prima Visita', true, 'value'),
@@ -612,8 +615,8 @@ function buildSectionDefs(input: SheetInput): SectionDef[] {
     S({ key: 'cfmp', label: 'CFMP', xl: 71, format: 'percent', tone: 'neutral', agg: 'last', cfmp: true }),
   ]
 
-  const creditComp = (key: string, xl: number, label: string, pctLabel: string, field: CashField, tone: Tone): Spec[] => [
-    S({ key, label, level: 1, ancestors: ['credits'], xl, format: 'currency', tone, agg: 'last', monthly: cashSeries(field) }),
+  const creditComp = (key: string, xl: number, label: string, pctLabel: string, field: CashField, tone: Tone, budgetKey?: string): Spec[] => [
+    S({ key, label, level: 1, ancestors: ['credits'], xl, format: 'currency', tone, agg: 'last', monthly: cashSeries(field), budgetKey }),
     S({
       key: `${key}_pct`,
       label: pctLabel,
@@ -680,7 +683,7 @@ function buildSectionDefs(input: SheetInput): SectionDef[] {
     }),
     ...creditComp('credit_planned', 77, 'Di cui € Crediti Pianificati', '% Crediti Pianificati', 'plannedReceivables', 'neutral'),
     ...creditComp('credit_unplanned', 79, 'Di cui € Crediti NON - Pianificati', '% Crediti NON - Pianificati', 'unplannedReceivables', 'neutral'),
-    ...creditComp('credit_overdue', 81, 'Di cui € Crediti Scaduti', '% Crediti Scaduti', 'overdueReceivables', 'lower'),
+    ...creditComp('credit_overdue', 81, 'Di cui € Crediti Scaduti', '% Crediti Scaduti', 'overdueReceivables', 'lower', 'cashflow.credits_overdue'),
     ...creditComp('credit_third', 83, 'Di cui € Terzo Pagante', '% Terzo Pagante', 'thirdPartyPayerReceivables', 'neutral'),
     S({ key: 'credit_portfolio', label: 'Di cui € Portafoglio Crediti Inizio Anno', level: 1, ancestors: ['credits'], xl: 85, format: 'currency', tone: 'neutral', agg: 'last', manualYear: true }),
   ]
@@ -869,6 +872,7 @@ function kpiRows(
         afp: { value: afp.value, src: afp.src, applicable: mask[0] !== 'x' },
         budget: { value: bud.value, src: bud.src, applicable: mask[4] !== 'x' },
         format: fmt,
+        monthlyBudget: spec.budgetFn ? 'derived' : spec.budgetKey,
         manualQ: spec.manualQ,
         manualYear: spec.manualYear,
         cfmp: spec.cfmp,
@@ -912,10 +916,15 @@ function plRows(input: SheetInput, block: PlBlock, manual: ManualFn): SheetRow[]
   const defs = buildRowDefs(accounts)
   const costKinds = new Set(['variable', 'fixed', 'variable_total', 'fixed_total'])
 
-  // budget annuo di Ricavi e MOL: obiettivi trimestrali (kpi_targets) > valore inserito a mano
+  // ricavi: budget MENSILE (annuo = somma dei mesi, cumulato esatto per trimestre);
+  // ricavi e MOL: obiettivi trimestrali (kpi_targets) > valore inserito a mano
+  const revMonthly = revenueMonthlyBudget(input.targets, year)
+  const hasRevMonthly = revMonthly.some(nonNull)
+  const revMonthsUpTo = (n: number) => sumOf(revMonthly.slice(0, n).filter(nonNull))
   const budgetFor = (def: PlRowDef): number | null => {
     const key = plBudgetKey(def)
     if (!key) return null
+    if (def.kind === 'revenue' && hasRevMonthly) return revMonthsUpTo(12)
     const fromTargets = quarterlyTargetTotal(input.targets, year, def.kind === 'revenue' ? 'economics.revenue' : 'economics.mol')
     return fromTargets ?? manual(key, 'budget')
   }
@@ -944,7 +953,7 @@ function plRows(input: SheetInput, block: PlBlock, manual: ManualFn): SheetRow[]
       set(2, { kind: 'calc', value: yearCell?.value ?? null, fmt: 'currency' })
       set(3, rel(fullYear ? (yearCell?.value ?? null) : null, afpCell?.value ?? null))
       set(4, { kind: 'calc', value: budget, fmt: 'currency' })
-      set(5, rel(yearCell?.value ?? null, budget != null ? (budget * nQuarters) / 4 : null))
+      set(5, rel(yearCell?.value ?? null, def.kind === 'revenue' && hasRevMonthly ? revMonthsUpTo(nQuarters * 3) : budget != null ? (budget * nQuarters) / 4 : null))
     }
 
     for (let i = 0; i < 4; i++) {
@@ -957,7 +966,16 @@ function plRows(input: SheetInput, block: PlBlock, manual: ManualFn): SheetRow[]
       const cell = cellFor(def, col, afp.column)
       set(base, { kind: 'calc', value: col.available ? cell.value : null, fmt: 'currency' })
       set(base + 1, { kind: 'calc', value: col.available ? cell.pct : null, fmt: 'percent' })
-      const quarterBudget = budget != null ? (block === 'cumulative' ? (budget * (i + 1)) / 4 : budget / 4) : null
+      const monthlyRev = def.kind === 'revenue' && hasRevMonthly
+      const quarterBudget = monthlyRev
+        ? block === 'cumulative'
+          ? revMonthsUpTo((i + 1) * 3)
+          : revMonthsUpTo((i + 1) * 3) - revMonthsUpTo(i * 3)
+        : budget != null
+          ? block === 'cumulative'
+            ? (budget * (i + 1)) / 4
+            : budget / 4
+          : null
       if (def.kind === 'revenue' && block === 'cumulative' && quarterBudget != null) {
         set(base + 2, rel(col.available ? cell.value : null, quarterBudget))
       } else {
@@ -982,9 +1000,10 @@ function plRows(input: SheetInput, block: PlBlock, manual: ManualFn): SheetRow[]
               afp: { value: afpCell?.value ?? null, src: afp.source === 'none' ? null : afp.source === 'real' ? 'real' : 'manual', applicable: false },
               budget: {
                 value: budget,
-                src: quarterlyTargetTotal(input.targets, year, def.kind === 'revenue' ? 'economics.revenue' : 'economics.mol') != null ? 'targets' : budget != null ? 'manual' : null,
+                src: (def.kind === 'revenue' && hasRevMonthly) || quarterlyTargetTotal(input.targets, year, def.kind === 'revenue' ? 'economics.revenue' : 'economics.mol') != null ? 'targets' : budget != null ? 'manual' : null,
                 applicable: true,
               },
+              monthlyBudget: def.kind === 'revenue' ? 'economics.revenue_monthly' : undefined,
               format: 'currency',
               rowKey: plKeyForRef,
             }
@@ -1072,7 +1091,8 @@ export function buildAnalyticSheet(input: SheetInput): SheetSection[] {
     revenue: afpRev && afpRev.revenue > 0 ? afpRev.revenue : null,
     mdcPct: afpMdc && afpMdc.revenue > 0 ? afpMdc.mdc / afpMdc.revenue : null,
   }
-  const budgetRevenue = quarterlyTargetTotal(input.targets, input.year, 'economics.revenue') ?? manual('pl:revenue', 'budget')
+  const revMonths = revenueMonthlyBudget(input.targets, input.year).filter(nonNull)
+  const budgetRevenue = revMonths.length ? sumOf(revMonths) : (quarterlyTargetTotal(input.targets, input.year, 'economics.revenue') ?? manual('pl:revenue', 'budget'))
 
   const allSpecs = defs.flatMap((d) => d.specs)
   const curStore = runDataset(allSpecs, input.current, input.year, input.accounts, manual)

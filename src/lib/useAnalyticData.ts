@@ -79,6 +79,21 @@ export function useAnalyticData(year: number) {
     [year],
   )
 
+  /** Salva (o, con null, elimina) l'obiettivo di un mese (1-12) per una metrica e aggiorna subito la vista. */
+  const saveTarget = useCallback(
+    async (metricKey: string, month: number, value: number | null) => {
+      const periodStart = `${year}-${String(month).padStart(2, '0')}-01`
+      if (value == null) await dataProvider.deleteKpiTarget(metricKey, periodStart)
+      else await dataProvider.upsertKpiTarget({ periodStart, metricKey, targetValue: value })
+      setData((d) => {
+        if (!d) return d
+        const rest = d.targets.filter((t) => !(t.metricKey === metricKey && t.periodStart === periodStart))
+        return { ...d, targets: value == null ? rest : [...rest, { periodStart, metricKey, targetValue: value }] }
+      })
+    },
+    [year],
+  )
+
   /** Salva i parametri di studio dell'anno (poltrone, minuti di apertura, target CFMP/saturazione). */
   const saveConfig = useCallback(
     async (patch: Partial<Omit<StudioConfig, 'year'>>) => {
@@ -95,5 +110,5 @@ export function useAnalyticData(year: number) {
     [data?.config, year],
   )
 
-  return { data, error, sections, manual: data?.manual ?? [], saveManual, config: data?.config ?? null, saveConfig }
+  return { data, error, sections, manual: data?.manual ?? [], saveManual, saveTarget, config: data?.config ?? null, saveConfig }
 }

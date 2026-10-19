@@ -67,4 +67,5 @@ export interface DataProvider {
   // le pagine filtrano per il metricKey che gli interessa.
   getKpiTargets(year: number): Promise<KpiTarget[]>
   upsertKpiTarget(row: KpiTarget): Promise<void>
+  deleteKpiTarget(metricKey: string, periodStart: string): Promise<void>
 }
